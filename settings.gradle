@@ -1,1 +1,2 @@
 include ':spark'
+include ':kafka-spring'
