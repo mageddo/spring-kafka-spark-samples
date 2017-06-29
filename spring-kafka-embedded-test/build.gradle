@@ -1,0 +1,24 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+apply plugin: "java"
+apply plugin: "idea"
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+
+dependencies {
+
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter', version: '1.5.3.RELEASE'
+    compile group: 'org.springframework.kafka', name: 'spring-kafka', version: '1.2.2.RELEASE'
+
+    testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: '1.5.3.RELEASE'
+    testCompile group: 'org.springframework.kafka', name: 'spring-kafka-test', version: '1.2.2.RELEASE'
+
+}
