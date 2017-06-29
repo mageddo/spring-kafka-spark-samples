@@ -5,6 +5,8 @@ Thumbs.db
 
 # Build Files #
 
+
+*.log
 bin
 target
 build/

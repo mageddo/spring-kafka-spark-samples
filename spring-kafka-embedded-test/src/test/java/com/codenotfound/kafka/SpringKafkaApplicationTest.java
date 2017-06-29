@@ -4,7 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Before;
+import com.codenotfound.kafka.consumer.Receiver;
+import com.codenotfound.kafka.producer.Sender;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,9 +14,6 @@ import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.kafka.listener.MessageListenerContainer;
 import org.springframework.kafka.test.utils.ContainerTestUtils;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import com.codenotfound.kafka.consumer.Receiver;
-import com.codenotfound.kafka.producer.Sender;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -30,7 +28,7 @@ public class SpringKafkaApplicationTest {
   @Autowired
   private KafkaListenerEndpointRegistry kafkaListenerEndpointRegistry;
 
-  @Before
+//  @Before
   public void setUp() throws Exception {
     // wait until the partitions are assigned
     for (MessageListenerContainer messageListenerContainer : kafkaListenerEndpointRegistry
