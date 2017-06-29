@@ -1,2 +1,3 @@
 include ':spark'
 include ':kafka-spring'
+include ':spring-kafka-embedded-test'
