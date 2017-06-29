@@ -56,15 +56,16 @@ project(":kafka-spring"){
 
 	ext {
 		springBootVersion = "1.5.3.RELEASE"
+		springKafka = "1.2.2.RELEASE"
 	}
 
 	dependencies {
-//		compile group: "org.springframework.boot", name: "spring-boot-starter", version: "${springBootVersion}"
 		compile group: "org.springframework.boot", name: "spring-boot-starter-web", version: "${springBootVersion}"
 		compile group: "org.springframework.boot", name: "spring-boot-starter-aop", version: "${springBootVersion}"
-		compile group: 'org.springframework.kafka', name: 'spring-kafka', version: '1.2.2.RELEASE'
+		compile group: 'org.springframework.kafka', name: 'spring-kafka', version: "${springKafka}"
 
 		testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: "${springBootVersion}"
+		testCompile group: 'org.springframework.kafka', name: 'spring-kafka-test', version: "${springKafka}"
 	}
 
 }

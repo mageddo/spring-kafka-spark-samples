@@ -37,7 +37,6 @@ import java.util.concurrent.Executors;
 
 @SpringBootApplication
 @Configuration
-@Import(AutoCommitConfig.class)
 public class Application { /*implements SchedulingConfigurer {*/
 //
 	public static final String SERVER = "kafka.dev:9092";

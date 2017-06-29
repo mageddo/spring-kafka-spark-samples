@@ -6,8 +6,12 @@ import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
 
@@ -20,9 +24,15 @@ import static com.mageddo.kafka.Application.SERVER;
  * Created by elvis on 28/06/17.
  */
 @Configuration
+@EnableKafka
+@EnableAutoConfiguration
+@SpringBootApplication
 public class AutoCommitConfig {
 
 	public static final String PING_TEMPLATE = "PingTemplate";
+
+	@Value("${spring.kafka.bootstrap-servers}")
+	private String kafkaServer;
 
 	@Bean
 	ConcurrentKafkaListenerContainerFactory<Integer, String> kafkaListenerContainerFactory() {
@@ -41,7 +51,7 @@ public class AutoCommitConfig {
 	@Bean
 	public Map<String, Object> consumerConfigs() {
 		Map<String, Object> props = new HashMap<>();
-		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, SERVER);
+		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaServer);
 		props.put(ConsumerConfig.GROUP_ID_CONFIG, "group.a");
 		props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
 		props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "100");
@@ -59,7 +69,7 @@ public class AutoCommitConfig {
 	@Bean
 	public Map<String, Object> producerConfigs() {
 		Map<String, Object> props = new HashMap<>();
-		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, SERVER);
+		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaServer);
 		props.put(ProducerConfig.RETRIES_CONFIG, 0);
 		props.put(ProducerConfig.RETRIES_CONFIG, 0);
 		props.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);
