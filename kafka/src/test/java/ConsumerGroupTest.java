@@ -1,5 +1,11 @@
 import com.mageddo.kafka.poc.ProducerExample;
 import com.mageddo.kafka.utils.KafkaEmbedded;
+import kafka.admin.AdminUtils;
+import kafka.admin.RackAwareMode;
+import kafka.utils.ZKStringSerializer$;
+import kafka.utils.ZkUtils;
+import org.I0Itec.zkclient.ZkClient;
+import org.I0Itec.zkclient.ZkConnection;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -26,20 +32,37 @@ import java.util.concurrent.TimeUnit;
  */
 public class ConsumerGroupTest {
 
-	private static final String PING_TOPIC = "Ping";
-	private static final String PING_GROUP_ID = "Ping.a";
-	private static final int CONSUMERS_QUANTTITY = 2;
+	private static final String PING_TOPIC = "Ping2";
+	private static final String PING_GROUP_ID = "Ping.a1";
+	private static final int CONSUMERS_QUANTTITY = 20;
 	private static final Logger logger = LoggerFactory.getLogger(ConsumerGroupTest.class);
 
 	private final Map<String, ConsumerRecord<String, String>> records = new TreeMap<>();
 	private final CountDownLatch countDownLatch = new CountDownLatch(5);
 
-	@ClassRule
-	public static final KafkaEmbedded kafkaEmbedded = new KafkaEmbedded(1, true, 1, PING_TOPIC);
+//	@ClassRule
+//	public static KafkaEmbedded kafkaEmbedded = new KafkaEmbedded(1, true, 1, PING_TOPIC);
+	public static KafkaEmbedded kafkaEmbedded = new KafkaEmbedded(1);
 
 
 	@Test
-	public void testPostAndconsume() throws InterruptedException {
+	public void testPostAndconsume() throws Exception {
+
+		kafkaEmbedded.before();
+
+		ZkClient client = new ZkClient(kafkaEmbedded.getZookeeperConnectionString(), 10000, 10000, ZKStringSerializer$.MODULE$);
+		ZkUtils zkUtils = new ZkUtils(client, new ZkConnection(kafkaEmbedded.getZookeeperConnectionString()), false);
+
+//        if(AdminUtils.topicExists(zkUtils, topic)){
+//            AdminUtils.deleteTopic(zkUtils, topic);
+//            AdminUtils.deleteAllConsumerGroupInfoForTopicInZK(zkUtils, topic);
+////            AdminUtils.deleteConsumerGroupInZK(zkUtils, groupId);
+//        }
+		try{
+			AdminUtils.createTopic(zkUtils, PING_TOPIC, 10, 1, new Properties(), RackAwareMode.Disabled$.MODULE$);
+		}catch (Exception e){
+			e.printStackTrace();
+		}
 
 		logger.info("status=posted");
 		final ExecutorService executorService = Executors.newFixedThreadPool(CONSUMERS_QUANTTITY);
@@ -49,19 +72,21 @@ public class ConsumerGroupTest {
 
 		final KafkaProducer<String, String> producer = new KafkaProducer<>(ProducerExample.config(kafkaEmbedded.getBrokersAsString()));
 		final String[][] msgs = {{"1", "0x1388"}, {"2", "0x2710"}, {"1", "0x4e20"}, {"2", "0x9c40"}, {"2", "0x13880"}, };
-		for (int i = 0; i < msgs.length; i++) {
-
-			final ProducerRecord<String, String> record = new ProducerRecord<>(PING_TOPIC, msgs[i][0], msgs[i][1]);
+//		for (int i = 0; i < msgs.length; i++) {
+		for(;;){
+//			final ProducerRecord<String, String> record = new ProducerRecord<>(PING_TOPIC, msgs[i][0], msgs[i][1]);
+//			producer.send(record);
 			producer.send(new ProducerRecord<>(PING_TOPIC, "x" ));
 			producer.flush();
 			logger.info("status=posted");
+			Thread.sleep(1000);
 
 		}
 
-		countDownLatch.await(10, TimeUnit.SECONDS);
-
-		executorService.shutdown();
-		executorService.awaitTermination(5, TimeUnit.SECONDS);
+//		countDownLatch.await(10, TimeUnit.SECONDS);
+//
+//		executorService.shutdown();
+//		executorService.awaitTermination(5, TimeUnit.SECONDS);
 	}
 
 	private static Properties createConsumerConfig(String groupId, String kafkaServer, String zookeeper) {
@@ -124,7 +149,7 @@ public class ConsumerGroupTest {
 					for (final ConsumerRecord<String, String> record : records) {
 						this.records.put(record.value(), record);
 						countDownLatch.countDown();
-						logger.debug("thread={}, record={}", name, record);
+						logger.info("thread={}, record={}", name, record);
 					}
 				}
 			} catch (Exception e) {
