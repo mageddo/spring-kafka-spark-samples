@@ -15,7 +15,7 @@ public class ProducerExample {
 	public ProducerExample(String kafka, String topic) throws InterruptedException {
 		final KafkaProducer<String, Object> producer = new KafkaProducer<>(producerConfigs(kafka));
 
-		while(true){
+		while (true) {
 
 			final ProducerRecord<String, Object> record = new ProducerRecord<>(
 				topic, String.valueOf(new Random().nextInt(3) + 1), Integer.toHexString(new Random().nextInt(100))
