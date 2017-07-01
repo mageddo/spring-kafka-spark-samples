@@ -1,4 +1,5 @@
-package com.mageddo.kafka.utils;/*
+package com.mageddo.kafka.utils;
+/*
  * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -371,7 +372,7 @@ public class KafkaEmbedded extends ExternalResource {
 	public String getBrokersAsString() {
 		StringBuilder builder = new StringBuilder();
 		for (KafkaServer brokerAddress : getBrokerAddresses()) {
-			builder.append(brokerAddress.toString()).append(',');
+			builder.append(getAddress(brokerAddress)).append(',');
 		}
 		return builder.substring(0, builder.length() - 1);
 	}
@@ -442,6 +443,10 @@ public class KafkaEmbedded extends ExternalResource {
 
 		});
 		logger.debug("Subscription Initiated");
+	}
+
+	public static String getAddress(KafkaServer kafkaServer){
+		return "127.0.0.1:" + kafkaServer.config().port();
 	}
 
 }

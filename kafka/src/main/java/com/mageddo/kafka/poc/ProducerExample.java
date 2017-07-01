@@ -15,7 +15,7 @@ import java.util.Random;
 public class ProducerExample {
 
 	public ProducerExample(String kafka, String topic) throws InterruptedException {
-		final KafkaProducer<String, Object> producer = new KafkaProducer<>(producerConfigs(kafka));
+		final KafkaProducer<String, Object> producer = new KafkaProducer<>(config(kafka));
 
 		while (true) {
 
@@ -32,7 +32,7 @@ public class ProducerExample {
 
 	}
 
-	public static Map<String, Object> producerConfigs(String kafkaServer) {
+	public static Map<String, Object> config(String kafkaServer) {
 		Map<String, Object> props = new HashMap<>();
 		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaServer);
 		props.put(ProducerConfig.RETRIES_CONFIG, 0);
