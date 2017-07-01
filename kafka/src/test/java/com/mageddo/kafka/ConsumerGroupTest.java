@@ -1,3 +1,5 @@
+package com.mageddo.kafka;
+
 import com.mageddo.kafka.poc.ProducerExample;
 import com.mageddo.kafka.utils.KafkaEmbedded;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -8,16 +10,15 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.assertj.core.api.Assertions;
+import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.mageddo.kafka.vo.RecordVO;
 
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Created by elvis on 01/07/17.
@@ -32,21 +33,28 @@ public class ConsumerGroupTest {
 	private static final int CONSUMERS_QUANTTITY = 2;
 
 	private final CountDownLatch aCountDownLatch = new CountDownLatch(EXPECTED_REGISTERS);
-	private final Map<String, ConsumerRecord<String, String>> aRecords = new HashMap<>();
+	private final ConcurrentMap<String, List<ConsumerRecord<String, String>>> aRecords = new ConcurrentHashMap<>();
 
 	private final CountDownLatch bCountDownLatch = new CountDownLatch(EXPECTED_REGISTERS);
-	private final Map<String, ConsumerRecord<String, String>> bRecords = new HashMap<>();
+	private final ConcurrentMap<String, List<ConsumerRecord<String, String>>> bRecords = new ConcurrentHashMap<>();
 
 	@ClassRule
 	public static KafkaEmbedded kafkaEmbedded = new KafkaEmbedded(1, true, CONSUMERS_QUANTTITY, PING_TOPIC);
 
+	/**
+	 * This tests create a topic with {@value CONSUMERS_QUANTTITY} partitions,
+	 * two consumer groups with {@value CONSUMERS_QUANTTITY} consumers each other.
+	 * Then post {@value #EXPECTED_REGISTERS} messages to the topic especifying two different keys, that way the messages
+	 * will be distributed to the partitions by the key ensuring that only one partition have a specific key messages
+	 * @throws Exception
+	 */
 	@Test
 	public void testPostAndconsume() throws Exception {
 
 		final ExecutorService executorService = Executors.newFixedThreadPool(CONSUMERS_QUANTTITY);
 		for (int threadNum = 0; threadNum < CONSUMERS_QUANTTITY; threadNum++) {
 			executorService.submit(new SimpleConsumer(aRecords, aCountDownLatch, kafkaEmbedded, PING_TOPIC, PING_GROUP_ID_A, "a-" + threadNum));
-			executorService.submit(new SimpleConsumer(bRecords, aCountDownLatch, kafkaEmbedded, PING_TOPIC, PING_GROUP_ID_B, "b-" + threadNum));
+			executorService.submit(new SimpleConsumer(bRecords, bCountDownLatch, kafkaEmbedded, PING_TOPIC, PING_GROUP_ID_B, "b-" + threadNum));
 		}
 		Thread.sleep(10_000);
 
@@ -61,14 +69,22 @@ public class ConsumerGroupTest {
 		executorService.shutdown();
 		executorService.awaitTermination(EXPECTED_REGISTERS, TimeUnit.SECONDS);
 
-		aCountDownLatch.await(10, TimeUnit.SECONDS);
-		bCountDownLatch.await(10, TimeUnit.SECONDS);
+		Assert.assertTrue(aCountDownLatch.await(10, TimeUnit.SECONDS));
+		Assert.assertTrue(bCountDownLatch.await(10, TimeUnit.SECONDS));
 
-		Assertions.assertThat(this.aRecords.size()).isEqualTo(EXPECTED_REGISTERS);
-		Assertions.assertThat(this.aRecords.get("0x1388")).hasFieldOrPropertyWithValue("key", "1");
+		Assertions.assertThat(this.aRecords.size()).isEqualTo(2);
 
-		Assertions.assertThat(this.bRecords.size()).isEqualTo(EXPECTED_REGISTERS);
-		Assertions.assertThat(this.bRecords.get("0x1388")).hasFieldOrPropertyWithValue("key", "1");
+		final List<ConsumerRecord<String, String>> aRecordKeyOne = this.aRecords.get("1");
+		Assert.assertEquals(2, aRecordKeyOne.size());
+		Assert.assertEquals(aRecordKeyOne.get(0).partition(), aRecordKeyOne.get(1).partition());
+
+		final List<ConsumerRecord<String, String>> aRecordKeyTwo = this.aRecords.get("2");
+		Assert.assertEquals(3, this.aRecords.get("2").size());
+		Assert.assertEquals(2, aRecordKeyOne.size());
+
+		Assertions.assertThat(aRecordKeyTwo.get(0).partition())
+			.isEqualTo(aRecordKeyTwo.get(1).partition())
+			.isEqualTo(aRecordKeyTwo.get(2).partition());
 
 	}
 
@@ -87,14 +103,14 @@ public class ConsumerGroupTest {
 	static class SimpleConsumer implements Runnable {
 
 		private final Logger logger = LoggerFactory.getLogger(getClass());
-		private final Map<String, ConsumerRecord<String, String>> records;
+		private final ConcurrentMap<String, List<ConsumerRecord<String, String>>> records;
 		private final CountDownLatch countDownLatch;
 		private final KafkaEmbedded kafkaEmbedded;
 		private final String name;
 		private final String groupId;
 		private final String topic;
 
-		SimpleConsumer(Map<String, ConsumerRecord<String, String>> records, CountDownLatch countDownLatch,
+		SimpleConsumer(ConcurrentMap<String, List<ConsumerRecord<String, String>>> records, CountDownLatch countDownLatch,
 									 KafkaEmbedded kafkaEmbedded, String topic, String groupId, String name) {
 			this.records = records;
 			this.countDownLatch = countDownLatch;
@@ -115,7 +131,14 @@ public class ConsumerGroupTest {
 				while (true) {
 					final ConsumerRecords<String, String> records = consumer.poll(1000);
 					for (final ConsumerRecord<String, String> record : records) {
-						this.records.put(record.value(), record);
+
+						final List<ConsumerRecord<String, String>> value = new ArrayList<>();
+						List<ConsumerRecord<String, String>> retVal = this.records.putIfAbsent(record.key(), value);
+						if(retVal == null){
+							retVal = value;
+						}
+						retVal.add(record);
+
 						countDownLatch.countDown();
 						logger.info("thread={}, record={}", name, record);
 					}
