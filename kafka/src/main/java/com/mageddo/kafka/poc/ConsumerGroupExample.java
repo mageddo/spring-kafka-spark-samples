@@ -8,6 +8,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import com.mageddo.kafka.utils.KafkaEmbedded;
+import kafka.admin.AdminUtils;
+import kafka.admin.RackAwareMode;
 import kafka.utils.ZKStringSerializer$;
 import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
@@ -77,10 +80,15 @@ public class ConsumerGroupExample {
 		return props;
 	}
 
-	public static void main(String[] args) throws UnknownHostException, InterruptedException {
+	public static void main(String[] args) throws Exception {
 
-		String zooKeeper = "zookeeper.dev:2181";
-		String kafka = "kafka.dev:9092";
+//		String zooKeeper = "zookeeper.dev:2181";
+//		String kafka = "kafka.dev:9092";
+		final KafkaEmbedded kafkaEmbedded = new KafkaEmbedded(1);
+		kafkaEmbedded.before();
+		String zooKeeper = kafkaEmbedded.getZookeeperConnectionString();
+//		String kafka = kafkaEmbedded.getBrokerAddress(0).config().hostName() + "127.0.0.1:" + kafkaEmbedded.getBrokerAddress(0).config().port();
+		String kafka = "127.0.0.1:" + kafkaEmbedded.getBrokerAddress(0).config().port();
 		String groupId = "ping.a";
 		String topic = "Ping";
 		int threads = 20;
@@ -99,15 +107,15 @@ public class ConsumerGroupExample {
 //            AdminUtils.deleteAllConsumerGroupInfoForTopicInZK(zkUtils, topic);
 ////            AdminUtils.deleteConsumerGroupInZK(zkUtils, groupId);
 //        }
-//        try{
-//            AdminUtils.createTopic(zkUtils, topic, 10, 1, new Properties(), RackAwareMode.Disabled$.MODULE$);
-//        }catch (Exception e){
-//            e.printStackTrace();
-//        }
+        try{
+            AdminUtils.createTopic(zkUtils, topic, 10, 1, new Properties(), RackAwareMode.Disabled$.MODULE$);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
 
 		// Consumption creation
 		//
-		ConsumerGroupExample example = new ConsumerGroupExample(zooKeeper, groupId, topic, kafka);
+z		ConsumerGroupExample example = new ConsumerGroupExample(zooKeeper, groupId, topic, kafka);
 		example.run(threads);
 
 		Thread.sleep(3000);
