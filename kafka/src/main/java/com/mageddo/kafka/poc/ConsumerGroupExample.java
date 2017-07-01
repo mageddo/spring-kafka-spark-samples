@@ -115,7 +115,7 @@ public class ConsumerGroupExample {
 
 		// Consumption creation
 		//
-z		ConsumerGroupExample example = new ConsumerGroupExample(zooKeeper, groupId, topic, kafka);
+		ConsumerGroupExample example = new ConsumerGroupExample(zooKeeper, groupId, topic, kafka);
 		example.run(threads);
 
 		Thread.sleep(3000);
