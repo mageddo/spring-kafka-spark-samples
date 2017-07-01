@@ -27,7 +27,7 @@ public class ConsumerGroupTest {
 	private static final Logger logger = LoggerFactory.getLogger(ConsumerGroupTest.class);
 	private static final String PING_TOPIC = "Ping";
 	private static final String PING_GROUP_ID_A = "Ping.a";
-	private static final String PING_GROUP_ID_B = "Ping.a";
+	private static final String PING_GROUP_ID_B = "Ping.b";
 	private static final int EXPECTED_REGISTERS = 5;
 	private static final int CONSUMERS_QUANTTITY = 2;
 
@@ -38,7 +38,7 @@ public class ConsumerGroupTest {
 	private final Map<String, ConsumerRecord<String, String>> bRecords = new HashMap<>();
 
 	@ClassRule
-	public static KafkaEmbedded kafkaEmbedded = new KafkaEmbedded(1, true, 2, PING_TOPIC);
+	public static KafkaEmbedded kafkaEmbedded = new KafkaEmbedded(1, true, CONSUMERS_QUANTTITY, PING_TOPIC);
 
 	@Test
 	public void testPostAndconsume() throws Exception {
@@ -46,7 +46,7 @@ public class ConsumerGroupTest {
 		final ExecutorService executorService = Executors.newFixedThreadPool(CONSUMERS_QUANTTITY);
 		for (int threadNum = 0; threadNum < CONSUMERS_QUANTTITY; threadNum++) {
 			executorService.submit(new SimpleConsumer(aRecords, aCountDownLatch, kafkaEmbedded, PING_TOPIC, PING_GROUP_ID_A, "a-" + threadNum));
-			executorService.submit(new SimpleConsumer(bRecords, aCountDownLatch, kafkaEmbedded, PING_TOPIC, PING_GROUP_ID_B, "b" + threadNum));
+			executorService.submit(new SimpleConsumer(bRecords, aCountDownLatch, kafkaEmbedded, PING_TOPIC, PING_GROUP_ID_B, "b-" + threadNum));
 		}
 		Thread.sleep(10_000);
 
