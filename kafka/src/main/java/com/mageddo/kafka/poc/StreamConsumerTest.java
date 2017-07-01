@@ -1,3 +1,5 @@
+package com.mageddo.kafka.poc;
+
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
 
