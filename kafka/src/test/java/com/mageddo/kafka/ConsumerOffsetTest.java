@@ -16,47 +16,42 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.*;
 
 /**
  * Created by elvis on 01/07/17.
  */
-public class ConsumerGroupTest {
+public class ConsumerOffsetTest {
 
-	private static final Logger logger = LoggerFactory.getLogger(ConsumerGroupTest.class);
+	private static final Logger logger = LoggerFactory.getLogger(ConsumerOffsetTest.class);
 	private static final String PING_TOPIC = "Ping";
-	private static final String PING_GROUP_ID_A = "Ping.a";
-	private static final String PING_GROUP_ID_B = "Ping.b";
+	private static final String PING_GROUP_ID = "Ping.a";
 	private static final int EXPECTED_REGISTERS = 5;
 	private static final int CONSUMERS_QUANTTITY = 2;
 
-	private final CountDownLatch aCountDownLatch = new CountDownLatch(EXPECTED_REGISTERS);
-	private final ConcurrentMap<String, List<ConsumerRecord<String, String>>> aRecords = new ConcurrentHashMap<>();
-
-	private final CountDownLatch bCountDownLatch = new CountDownLatch(EXPECTED_REGISTERS);
-	private final ConcurrentMap<String, List<ConsumerRecord<String, String>>> bRecords = new ConcurrentHashMap<>();
+	private final CountDownLatch countDownLatch = new CountDownLatch(EXPECTED_REGISTERS);
+	private final ConcurrentMap<String, List<ConsumerRecord<String, String>>> records = new ConcurrentHashMap<>();
 
 	@ClassRule
 	public static KafkaEmbedded kafkaEmbedded = new KafkaEmbedded(1, true, CONSUMERS_QUANTTITY, PING_TOPIC);
 
-	/**
-	 * This tests create a topic with {@value CONSUMERS_QUANTTITY} partitions,
-	 * two consumer groups with {@value CONSUMERS_QUANTTITY} consumers each other.
-	 * Then post {@value #EXPECTED_REGISTERS} messages to the topic especifying two different keys, that way the messages
-	 * will be distributed to the partitions by the key ensuring that only one partition have a specific key messages
-	 * @throws Exception
-	 */
 	@Test
-	public void testPostAndconsume() throws Exception {
+	public void testPostAndconsumeFromBeginning() throws Exception {
 
 		final ExecutorService executorService = Executors.newFixedThreadPool(CONSUMERS_QUANTTITY);
 		for (int threadNum = 0; threadNum < CONSUMERS_QUANTTITY; threadNum++) {
-			executorService.submit(new SimpleConsumer(aRecords, aCountDownLatch, kafkaEmbedded, PING_TOPIC, PING_GROUP_ID_A, "a-" + threadNum));
-			executorService.submit(new SimpleConsumer(bRecords, bCountDownLatch, kafkaEmbedded, PING_TOPIC, PING_GROUP_ID_B, "b-" + threadNum));
+
+			final Properties conf = createConsumerConfig(PING_GROUP_ID, kafkaEmbedded.getBrokersAsString());
+			conf.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+			final KafkaConsumer kafkaConsumer = new KafkaConsumer<>(conf);
+			kafkaConsumer.subscribe(Arrays.asList(PING_TOPIC));
+
+			executorService.submit(new SimpleOffsetConsumer(kafkaConsumer, records, countDownLatch, "a-" + threadNum));
 		}
-		Thread.sleep(10_000);
 
 		final KafkaProducer<String, String> producer = new KafkaProducer<>(ProducerExample.config(kafkaEmbedded.getBrokersAsString()));
 		final String[][] msgs = {{"1", "0x1388"}, {"2", "0x2710"}, {"1", "0x4e20"}, {"2", "0x9c40"}, {"2", "0x13880"}, };
@@ -69,17 +64,16 @@ public class ConsumerGroupTest {
 		executorService.shutdown();
 		executorService.awaitTermination(EXPECTED_REGISTERS, TimeUnit.SECONDS);
 
-		Assert.assertTrue(aCountDownLatch.await(10, TimeUnit.SECONDS));
-		Assert.assertTrue(bCountDownLatch.await(10, TimeUnit.SECONDS));
+		Assert.assertTrue(countDownLatch.await(10, TimeUnit.SECONDS));
 
-		Assertions.assertThat(this.aRecords.size()).isEqualTo(2);
+		Assertions.assertThat(this.records.size()).isEqualTo(2);
 
-		final List<ConsumerRecord<String, String>> aRecordKeyOne = this.aRecords.get("1");
+		final List<ConsumerRecord<String, String>> aRecordKeyOne = this.records.get("1");
 		Assert.assertEquals(2, aRecordKeyOne.size());
 		Assert.assertEquals(aRecordKeyOne.get(0).partition(), aRecordKeyOne.get(1).partition());
 
-		final List<ConsumerRecord<String, String>> aRecordKeyTwo = this.aRecords.get("2");
-		Assert.assertEquals(3, this.aRecords.get("2").size());
+		final List<ConsumerRecord<String, String>> aRecordKeyTwo = this.records.get("2");
+		Assert.assertEquals(3, this.records.get("2").size());
 		Assert.assertEquals(2, aRecordKeyOne.size());
 
 		Assertions.assertThat(aRecordKeyTwo.get(0).partition())
@@ -88,7 +82,7 @@ public class ConsumerGroupTest {
 
 	}
 
-	private static Properties createConsumerConfig(String groupId, String kafkaServer, String zookeeper) {
+	private static Properties createConsumerConfig(String groupId, String kafkaServer) {
 		final Properties props = new Properties();
 		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaServer);
 		props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
@@ -100,34 +94,27 @@ public class ConsumerGroupTest {
 		return props;
 	}
 
-	static class SimpleConsumer implements Runnable {
+	static class SimpleOffsetConsumer implements Runnable {
 
 		private final Logger logger = LoggerFactory.getLogger(getClass());
 		private final ConcurrentMap<String, List<ConsumerRecord<String, String>>> records;
 		private final CountDownLatch countDownLatch;
-		private final KafkaEmbedded kafkaEmbedded;
 		private final String name;
-		private final String groupId;
-		private final String topic;
+		private final KafkaConsumer<String, String> consumer;
 
-		SimpleConsumer(ConcurrentMap<String, List<ConsumerRecord<String, String>>> records, CountDownLatch countDownLatch,
-									 KafkaEmbedded kafkaEmbedded, String topic, String groupId, String name) {
+		SimpleOffsetConsumer(KafkaConsumer<String, String> consumer, ConcurrentMap<String,
+				List<ConsumerRecord<String, String>>> records, CountDownLatch countDownLatch, String name) {
+
+			this.consumer = consumer;
 			this.records = records;
 			this.countDownLatch = countDownLatch;
-			this.kafkaEmbedded = kafkaEmbedded;
 			this.name = name;
-			this.groupId = groupId;
-			this.topic = topic;
 		}
 
 		@Override
 		public void run() {
 
 			try {
-				final KafkaConsumer<String, String> consumer = new KafkaConsumer<>(
-					createConsumerConfig(groupId, kafkaEmbedded.getBrokersAsString(), kafkaEmbedded.getZookeeperConnectionString())
-				);
-				consumer.subscribe(Arrays.asList(topic));
 				while (true) {
 					final ConsumerRecords<String, String> records = consumer.poll(1000);
 					for (final ConsumerRecord<String, String> record : records) {
