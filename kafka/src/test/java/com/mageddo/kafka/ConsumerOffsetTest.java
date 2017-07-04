@@ -2,12 +2,10 @@ package com.mageddo.kafka;
 
 import com.mageddo.kafka.poc.ProducerExample;
 import com.mageddo.kafka.utils.KafkaEmbedded;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
@@ -16,10 +14,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -46,7 +41,6 @@ public class ConsumerOffsetTest {
 		for (int threadNum = 0; threadNum < CONSUMERS_QUANTTITY; threadNum++) {
 
 			final Properties conf = createConsumerConfig(PING_GROUP_ID, kafkaEmbedded.getBrokersAsString());
-			conf.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 			final KafkaConsumer kafkaConsumer = new KafkaConsumer<>(conf);
 			kafkaConsumer.subscribe(Arrays.asList(PING_TOPIC));
 
@@ -82,6 +76,69 @@ public class ConsumerOffsetTest {
 
 	}
 
+	@Test
+	public void testUsingSeek() throws Exception {
+
+		final KafkaProducer<String, String> producer = new KafkaProducer<>(ProducerExample.config(kafkaEmbedded.getBrokersAsString()));
+		final String[][] msgs = {{"1", "0x1388"}, {"2", "0x2710"}, {"1", "0x4e20"}, {"2", "0x9c40"}, {"2", "0x13880"}, };
+		for (int i = 0; i < msgs.length; i++) {
+			producer.send(new ProducerRecord<>(PING_TOPIC, msgs[i][0], msgs[i][1]));
+			logger.info("status=posted");
+
+		}
+		final Properties conf = createConsumerConfig(PING_GROUP_ID, kafkaEmbedded.getBrokersAsString());
+		final KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(conf);
+		kafkaConsumer.subscribe(Arrays.asList(PING_TOPIC));
+
+		final ConsumerRecords<String, String> records = kafkaConsumer.poll(10000);
+		for (int i = 0; i < records.count(); i++) {
+			countDownLatch.countDown();
+		}
+		Assert.assertTrue(countDownLatch.await(10, TimeUnit.SECONDS));
+		Assert.assertEquals(0, kafkaConsumer.poll(1000).count());
+		kafkaConsumer.seek(new TopicPartition(PING_TOPIC, records.iterator().next().partition()), 0);
+		Assert.assertTrue(kafkaConsumer.poll(1000).count() > 0);
+
+	}
+
+
+	@Test
+	public void testManualCommit() throws Exception {
+		int totalCount = 0;
+		final KafkaProducer<String, String> producer = new KafkaProducer<>(ProducerExample.config(kafkaEmbedded.getBrokersAsString()));
+		final String[][] msgs = {{"1", "0x1388"}, {"2", "0x2710"}, {"1", "0x4e20"}, {"2", "0x9c40"}, {"2", "0x13880"}, };
+		for (int i = 0; i < msgs.length; i++) {
+			producer.send(new ProducerRecord<>(PING_TOPIC, msgs[i][0], msgs[i][1]));
+			logger.info("status=posted");
+
+		}
+		final Properties conf = createConsumerConfig(PING_GROUP_ID, kafkaEmbedded.getBrokersAsString());
+		conf.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+		final KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(conf);
+		kafkaConsumer.subscribe(Arrays.asList(PING_TOPIC));
+
+		ConsumerRecords<String, String> records;
+		do {
+			records = kafkaConsumer.poll(10000);
+			for (ConsumerRecord<String, String> record : records) {
+
+				if (new Random().nextBoolean()) {
+					kafkaConsumer.commitSync(Collections.singletonMap(
+						new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset())
+					));
+					countDownLatch.countDown();
+				}else{
+					break;
+				}
+				totalCount++;
+			}
+		}while (!records.isEmpty());
+
+		Assert.assertTrue(countDownLatch.await(10, TimeUnit.SECONDS));
+		Assert.assertTrue(totalCount >= EXPECTED_REGISTERS);
+
+	}
+
 	private static Properties createConsumerConfig(String groupId, String kafkaServer) {
 		final Properties props = new Properties();
 		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaServer);
@@ -89,6 +146,7 @@ public class ConsumerOffsetTest {
 		props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000");
 		props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
 		props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "30000");
+		props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 		props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 		return props;
