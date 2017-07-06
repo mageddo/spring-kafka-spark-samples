@@ -28,7 +28,6 @@ public class ConsumerOffsetTest {
 	private static final String PING_TOPIC_V1 = "Pingv1";
 	private static final String PING_TOPIC_V2 = "Pingv2";
 	private static final String PING_TOPIC_V3 = "Pingv3";
-	private static final String PING_TOPIC_V4 = "Pingv4";
 	private static final String PING_GROUP_ID = "Ping.a";
 	private static final String PING_GROUP_ID_V3 = "Ping.c";
 	private static final int EXPECTED_REGISTERS = 5;
@@ -128,7 +127,7 @@ public class ConsumerOffsetTest {
 	@Test
 	public void testManualCommit() throws Exception {
 
-		final String topic = PING_TOPIC_V4;
+		final String topic = PING_TOPIC_V1;
 		declareTopics(1, topic);
 
 		int totalCount = 0;
