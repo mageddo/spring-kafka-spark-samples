@@ -25,10 +25,14 @@ import java.util.concurrent.*;
 public class ConsumerOffsetTest {
 
 	private static final Logger logger = LoggerFactory.getLogger(ConsumerOffsetTest.class);
-	private static final String PING_TOPIC = "Ping";
+	private static final String PING_TOPIC_V1 = "Pingv1";
+	private static final String PING_TOPIC_V2 = "Pingv2";
+	private static final String PING_TOPIC_V3 = "Pingv3";
+	private static final String PING_TOPIC_V4 = "Pingv4";
 	private static final String PING_GROUP_ID = "Ping.a";
+	private static final String PING_GROUP_ID_V3 = "Ping.c";
 	private static final int EXPECTED_REGISTERS = 5;
-	private static final int CONSUMERS_QUANTTITY = 1;
+	private static final int CONSUMERS_QUANTTITY = 2;
 
 	private final CountDownLatch countDownLatch = new CountDownLatch(EXPECTED_REGISTERS);
 	private final ConcurrentMap<String, List<ConsumerRecord<String, String>>> records = new ConcurrentHashMap<>();
@@ -48,14 +52,16 @@ public class ConsumerOffsetTest {
 	@Test
 	public void testPostAndconsumeFromBeginning() throws Exception {
 
-		declareTopics(CONSUMERS_QUANTTITY, PING_TOPIC);
+		final String topic = PING_TOPIC_V2;
+
+		declareTopics(CONSUMERS_QUANTTITY, topic);
 
 		final ExecutorService executorService = Executors.newFixedThreadPool(CONSUMERS_QUANTTITY);
 		for (int threadNum = 0; threadNum < CONSUMERS_QUANTTITY; threadNum++) {
 
 			final Properties conf = createConsumerConfig(PING_GROUP_ID, kafkaEmbedded.getBrokersAsString());
 			final KafkaConsumer kafkaConsumer = new KafkaConsumer<>(conf);
-			kafkaConsumer.subscribe(Arrays.asList(PING_TOPIC));
+			kafkaConsumer.subscribe(Arrays.asList(topic));
 
 			executorService.submit(new SimpleOffsetConsumer(kafkaConsumer, records, countDownLatch, "a-" + threadNum));
 		}
@@ -63,7 +69,7 @@ public class ConsumerOffsetTest {
 		final KafkaProducer<String, String> producer = new KafkaProducer<>(ProducerExample.config(kafkaEmbedded.getBrokersAsString()));
 		final String[][] msgs = {{"1", "0x1388"}, {"2", "0x2710"}, {"1", "0x4e20"}, {"2", "0x9c40"}, {"2", "0x13880"}, };
 		for (int i = 0; i < msgs.length; i++) {
-			producer.send(new ProducerRecord<>(PING_TOPIC, msgs[i][0], msgs[i][1]));
+			producer.send(new ProducerRecord<>(topic, msgs[i][0], msgs[i][1]));
 			logger.info("status=posted");
 
 		}
@@ -92,18 +98,20 @@ public class ConsumerOffsetTest {
 	@Test
 	public void testUsingSeek() throws Exception {
 
-		declareTopics(CONSUMERS_QUANTTITY, PING_TOPIC);
+		final String topic = PING_TOPIC_V3;
+		final String groupId = PING_GROUP_ID_V3;
+		declareTopics(1, topic);
 
 		final KafkaProducer<String, String> producer = new KafkaProducer<>(ProducerExample.config(kafkaEmbedded.getBrokersAsString()));
 		final String[][] msgs = {{"1", "0x1388"}, {"2", "0x2710"}, {"1", "0x4e20"}, {"2", "0x9c40"}, {"2", "0x13880"}, };
 		for (int i = 0; i < msgs.length; i++) {
-			producer.send(new ProducerRecord<>(PING_TOPIC, msgs[i][0], msgs[i][1]));
+			producer.send(new ProducerRecord<>(topic, msgs[i][0], msgs[i][1]));
 			logger.info("status=posted");
 
 		}
-		final Properties conf = createConsumerConfig(PING_GROUP_ID, kafkaEmbedded.getBrokersAsString());
+		final Properties conf = createConsumerConfig(groupId, kafkaEmbedded.getBrokersAsString());
 		final KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(conf);
-		kafkaConsumer.subscribe(Arrays.asList(PING_TOPIC));
+		kafkaConsumer.subscribe(Arrays.asList(topic));
 
 		final ConsumerRecords<String, String> records = kafkaConsumer.poll(10000);
 		for (int i = 0; i < records.count(); i++) {
@@ -111,7 +119,7 @@ public class ConsumerOffsetTest {
 		}
 		Assert.assertTrue(countDownLatch.await(10, TimeUnit.SECONDS));
 		Assert.assertEquals(0, kafkaConsumer.poll(1000).count());
-		kafkaConsumer.seek(new TopicPartition(PING_TOPIC, records.iterator().next().partition()), 0);
+		kafkaConsumer.seek(new TopicPartition(topic, records.iterator().next().partition()), 0);
 		Assert.assertTrue(kafkaConsumer.poll(1000).count() > 0);
 
 	}
@@ -120,13 +128,14 @@ public class ConsumerOffsetTest {
 	@Test
 	public void testManualCommit() throws Exception {
 
-		declareTopics(1, PING_TOPIC);
+		final String topic = PING_TOPIC_V4;
+		declareTopics(1, topic);
 
 		int totalCount = 0;
 		final KafkaProducer<String, String> producer = new KafkaProducer<>(ProducerExample.config(kafkaEmbedded.getBrokersAsString()));
 		final String[][] msgs = {{"1", "0x1388"}, {"2", "0x2710"}, {"1", "0x4e20"}, {"2", "0x9c40"}, {"2", "0x13880"}, };
 		for (int i = 0; i < msgs.length; i++) {
-			producer.send(new ProducerRecord<>(PING_TOPIC, msgs[i][0], msgs[i][1]));
+			producer.send(new ProducerRecord<>(topic, msgs[i][0], msgs[i][1]));
 			logger.info("status=posted");
 
 		}
@@ -134,7 +143,7 @@ public class ConsumerOffsetTest {
 		conf.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
 		conf.remove(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG);
 		final KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(conf);
-		kafkaConsumer.subscribe(Arrays.asList(PING_TOPIC));
+		kafkaConsumer.subscribe(Arrays.asList(topic));
 
 		ConsumerRecords<String, String> records;
 		do {
