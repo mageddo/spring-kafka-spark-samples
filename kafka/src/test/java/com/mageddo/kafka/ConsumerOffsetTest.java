@@ -2,6 +2,8 @@ package com.mageddo.kafka;
 
 import com.mageddo.kafka.poc.ProducerExample;
 import com.mageddo.kafka.utils.KafkaEmbedded;
+import kafka.admin.AdminUtils;
+import kafka.utils.ZkUtils;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -26,16 +28,27 @@ public class ConsumerOffsetTest {
 	private static final String PING_TOPIC = "Ping";
 	private static final String PING_GROUP_ID = "Ping.a";
 	private static final int EXPECTED_REGISTERS = 5;
-	private static final int CONSUMERS_QUANTTITY = 2;
+	private static final int CONSUMERS_QUANTTITY = 1;
 
 	private final CountDownLatch countDownLatch = new CountDownLatch(EXPECTED_REGISTERS);
 	private final ConcurrentMap<String, List<ConsumerRecord<String, String>>> records = new ConcurrentHashMap<>();
 
 	@ClassRule
-	public static KafkaEmbedded kafkaEmbedded = new KafkaEmbedded(1, true, CONSUMERS_QUANTTITY, PING_TOPIC);
+	public static KafkaEmbedded kafkaEmbedded = new KafkaEmbedded(1, true);
+
+	public void declareTopics(int partitions, String ... topics){
+		ZkUtils zkUtils = kafkaEmbedded.getZkUtils();
+		Properties props = new Properties();
+		for (String topic : topics) {
+			AdminUtils.createTopic(zkUtils, topic, partitions, kafkaEmbedded.getCount(), props, null);
+		}
+
+	}
 
 	@Test
 	public void testPostAndconsumeFromBeginning() throws Exception {
+
+		declareTopics(CONSUMERS_QUANTTITY, PING_TOPIC);
 
 		final ExecutorService executorService = Executors.newFixedThreadPool(CONSUMERS_QUANTTITY);
 		for (int threadNum = 0; threadNum < CONSUMERS_QUANTTITY; threadNum++) {
@@ -79,6 +92,8 @@ public class ConsumerOffsetTest {
 	@Test
 	public void testUsingSeek() throws Exception {
 
+		declareTopics(CONSUMERS_QUANTTITY, PING_TOPIC);
+
 		final KafkaProducer<String, String> producer = new KafkaProducer<>(ProducerExample.config(kafkaEmbedded.getBrokersAsString()));
 		final String[][] msgs = {{"1", "0x1388"}, {"2", "0x2710"}, {"1", "0x4e20"}, {"2", "0x9c40"}, {"2", "0x13880"}, };
 		for (int i = 0; i < msgs.length; i++) {
@@ -104,6 +119,9 @@ public class ConsumerOffsetTest {
 
 	@Test
 	public void testManualCommit() throws Exception {
+
+		declareTopics(1, PING_TOPIC);
+
 		int totalCount = 0;
 		final KafkaProducer<String, String> producer = new KafkaProducer<>(ProducerExample.config(kafkaEmbedded.getBrokersAsString()));
 		final String[][] msgs = {{"1", "0x1388"}, {"2", "0x2710"}, {"1", "0x4e20"}, {"2", "0x9c40"}, {"2", "0x13880"}, };
@@ -114,6 +132,7 @@ public class ConsumerOffsetTest {
 		}
 		final Properties conf = createConsumerConfig(PING_GROUP_ID, kafkaEmbedded.getBrokersAsString());
 		conf.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+		conf.remove(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG);
 		final KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(conf);
 		kafkaConsumer.subscribe(Arrays.asList(PING_TOPIC));
 
@@ -123,11 +142,16 @@ public class ConsumerOffsetTest {
 			for (ConsumerRecord<String, String> record : records) {
 
 				if (new Random().nextBoolean()) {
+
 					kafkaConsumer.commitSync(Collections.singletonMap(
 						new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset())
 					));
 					countDownLatch.countDown();
 				}else{
+					// simulating error
+					kafkaConsumer.seek(
+						new TopicPartition(record.topic(), record.partition()), record.offset()
+					);
 					break;
 				}
 				totalCount++;

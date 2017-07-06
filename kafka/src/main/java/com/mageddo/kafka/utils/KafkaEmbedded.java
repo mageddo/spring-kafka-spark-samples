@@ -167,12 +167,16 @@ public class KafkaEmbedded extends ExternalResource {
 			KafkaServer server = TestUtils.createServer(new KafkaConfig(brokerConfigProperties), Time.SYSTEM);
 			this.kafkaServers.add(server);
 		}
-		ZkUtils zkUtils = new ZkUtils(getZkClient(), null, false);
+		ZkUtils zkUtils = getZkUtils();
 		Properties props = new Properties();
 		for (String topic : this.topics) {
 			AdminUtils.createTopic(zkUtils, topic, this.partitionsPerTopic, this.count, props, null);
 		}
 		System.setProperty(SPRING_EMBEDDED_KAFKA_BROKERS, getBrokersAsString());
+	}
+
+	public ZkUtils getZkUtils() {
+		return new ZkUtils(getZkClient(), null, false);
 	}
 
 //
@@ -283,7 +287,7 @@ public class KafkaEmbedded extends ExternalResource {
 					break;
 				}
 				canExit = true;
-				ZkUtils zkUtils = new ZkUtils(getZkClient(), null, false);
+				ZkUtils zkUtils = getZkUtils();
 				Map<String, Properties> topicProperties = AdminUtils$.MODULE$.fetchAllTopicConfigs(zkUtils);
 				Set<MetadataResponse.TopicMetadata> topicMetadatas =
 						AdminUtils$.MODULE$.fetchTopicMetadataFromZk(topicProperties.keySet(), zkUtils);
@@ -347,7 +351,7 @@ public class KafkaEmbedded extends ExternalResource {
 				break;
 			}
 			canExit = true;
-			ZkUtils zkUtils = new ZkUtils(getZkClient(), null, false);
+			ZkUtils zkUtils = getZkUtils();
 			MetadataResponse.TopicMetadata topicMetadata = AdminUtils$.MODULE$.fetchTopicMetadataFromZk(topic, zkUtils);
 			if (Errors.forCode(topicMetadata.error().code()).exception() == null) {
 				for (MetadataResponse.PartitionMetadata partitionMetadata : topicMetadata.partitionMetadata()) {
@@ -449,4 +453,7 @@ public class KafkaEmbedded extends ExternalResource {
 		return "127.0.0.1:" + kafkaServer.config().port();
 	}
 
+	public int getCount() {
+		return count;
+	}
 }
