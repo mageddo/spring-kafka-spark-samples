@@ -12,6 +12,7 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,7 @@ public class ConsumerOffsetTest {
 	private static final String PING_TOPIC_V1 = "Pingv1";
 	private static final String PING_TOPIC_V2 = "Pingv2";
 	private static final String PING_TOPIC_V3 = "Pingv3";
+	private static final String PING_TOPIC_V4 = "Pingv4";
 	private static final String PING_GROUP_ID = "Ping.a";
 	private static final String PING_GROUP_ID_V3 = "Ping.c";
 	private static final int EXPECTED_REGISTERS = 5;
@@ -151,8 +153,12 @@ public class ConsumerOffsetTest {
 
 				if (new Random().nextBoolean()) {
 
+					/**
+					 * Esse commit soh serve para que caso a aplicacao morra a aplicacao vai trazer a partir do ultimo commitado
+					 * e nao o poll inteiro novamente
+					 */
 					kafkaConsumer.commitSync(Collections.singletonMap(
-						new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset())
+						new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset() + 1)
 					));
 					countDownLatch.countDown();
 				}else{
@@ -169,6 +175,112 @@ public class ConsumerOffsetTest {
 		Assert.assertTrue(countDownLatch.await(10, TimeUnit.SECONDS));
 		Assert.assertTrue(totalCount >= EXPECTED_REGISTERS);
 
+	}
+
+	/**
+	 * When manual commit is set, the commit happen in next cases:
+	 * 	when .seek() is called, when .commit() is called, or when the next .poll() is called, in this case it commits
+	 * 	the last entire last .poll() call unless you called .seek() before
+	 * @throws Exception
+	 */
+	@Test
+	public void testManualCommitWhenConsumerClosesConnection() throws Exception {
+
+		final String topic = PING_TOPIC_V4;
+		declareTopics(1, topic);
+
+		final KafkaProducer<String, String> producer = new KafkaProducer<>(ProducerExample.config(kafkaEmbedded.getBrokersAsString()));
+		producer.send(new ProducerRecord<>(topic, "hi"));
+		final Properties conf = createConsumerConfig(PING_GROUP_ID, kafkaEmbedded.getBrokersAsString());
+		conf.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+		conf.remove(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG);
+
+		KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(conf);
+		kafkaConsumer.subscribe(Arrays.asList(topic));
+		Assert.assertEquals("First consume not success", 1, kafkaConsumer.poll(10000).count());
+		kafkaConsumer.close();
+
+		kafkaConsumer = new KafkaConsumer<>(conf);
+		kafkaConsumer.subscribe(Arrays.asList(topic));
+		Assert.assertEquals("Second consume not success", 1, kafkaConsumer.poll(10000).count());
+	}
+
+	/**
+	 * Este teste mostra o que acontece se  se um consumidor estiver com auto commit e for morto (morte da JVM por exemplo)
+	 * se outra instancia subir ela terá que esperar o tempo do SESSION_TIMEOUT_MS_CONFIG que é o tempo para o broker
+	 * entender que o ultimo consumidor realmente morreu
+	 *
+	 * Para testar:
+	 * Suba o kafka
+	 * Rode o teste, deve printar um valor maior que zero
+	 * Espere um tempo maior do que SESSION_TIMEOUT_MS_CONFIG e rode novamente, deve printar um valor maior do que zero novamente
+	 * Espere um tempo MENOR do que SESSION_TIMEOUT_MS_CONFIG e rode novamente, o .poll vai esperar ateh bater o tempo do session e entao retornara os registros
+	 */
+	@Test
+	@Ignore
+	public void manualTestSessionTimeout(){
+		String topic = "test";
+		final String broker = "kafka.dev:9092";
+		final KafkaProducer<String, String> producer = new KafkaProducer<>(ProducerExample.config(broker));
+		producer.send(new ProducerRecord<>(topic, "hi"));
+		final Properties conf = createConsumerConfig(PING_GROUP_ID, broker);
+		conf.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
+		conf.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 30000);
+		conf.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "30000");
+		conf.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "1000");
+
+		final KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(conf);
+		kafkaConsumer.subscribe(Arrays.asList(topic));
+		logger.info("results={}", kafkaConsumer.poll(40000).count());
+
+	}
+
+
+	/**
+	 * Teste mostra que mesmo que o consumidor esteja vivo, se ele demorar mais do que o tempo especificado para fazer
+	 * poll entao ele irá ser considerado morto pelo broker
+	 * @throws Exception
+	 */
+	@Test
+	public void testAutoCommitMeetingMaxPollTimeout() throws Exception {
+
+		final String topic = PING_TOPIC_V4;
+		declareTopics(1, topic);
+
+		final KafkaProducer<String, String> producer = new KafkaProducer<>(ProducerExample.config(kafkaEmbedded.getBrokersAsString()));
+		producer.send(new ProducerRecord<>(topic, "hi"));
+		final Properties conf = createConsumerConfig(PING_GROUP_ID, kafkaEmbedded.getBrokersAsString());
+		conf.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
+		conf.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 100);
+
+		/**
+		 * Tempo que o kafka vai esperar o consumidor interagir antes de fazer rebalance
+		 * Note que esse timeout soh vai ser respeitado se o consumidor estivesse vivo e a JVM fosse morta por exemplo
+		 * caso o consumidor pare de consumir por alguma razao mas ainda esteja vivo entao o timeout a ser considerado
+		 * será o MAX_POLL_INTERVAL_MS_CONFIG
+		 */
+//		conf.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "40000");
+
+		/**
+		 * Intervalo de tempo em que o consumidor vai ficar pingando o broker dizendo que está vivo
+		 */
+//		conf.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "25000");
+
+		/**
+		 * Intervalo em que o broker vai esperar entre um .poll() e outro, caso passe do tempo especificado
+		 * o broker vai considerar esse consumidor como morto e fazer rebalance, note que se esse timeout soh vai ser
+		 * considerado se o consumidor estiver vivo e por alguma razao estiver demorando para fazer poll caso contrario
+		 * o broker podera ter considerado o SESSION_TIMEOUT_MS_CONFIG e morrido antes
+		 */
+		conf.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "10000");
+
+		KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(conf);
+		kafkaConsumer.subscribe(Arrays.asList(topic));
+		Assert.assertEquals("First consume not success", 1, kafkaConsumer.poll(10000).count());
+
+		kafkaConsumer = new KafkaConsumer<>(conf);
+		kafkaConsumer.subscribe(Arrays.asList(topic));
+ 		Assert.assertEquals("Second consume not success", 1, kafkaConsumer.poll(11000).count());
 	}
 
 	private static Properties createConsumerConfig(String groupId, String kafkaServer) {

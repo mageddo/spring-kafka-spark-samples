@@ -164,6 +164,7 @@ public class KafkaEmbedded extends ExternalResource {
 			brokerConfigProperties.setProperty("replica.socket.timeout.ms", "1000");
 			brokerConfigProperties.setProperty("controller.socket.timeout.ms", "1000");
 			brokerConfigProperties.setProperty("offsets.topic.replication.factor", "1");
+			brokerConfigProperties.setProperty("group.min.session.timeout.ms", "1000");
 			KafkaServer server = TestUtils.createServer(new KafkaConfig(brokerConfigProperties), Time.SYSTEM);
 			this.kafkaServers.add(server);
 		}
