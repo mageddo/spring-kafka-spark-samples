@@ -30,8 +30,12 @@ public class ConsumerOffsetTest {
 	private static final String PING_TOPIC_V2 = "Pingv2";
 	private static final String PING_TOPIC_V3 = "Pingv3";
 	private static final String PING_TOPIC_V4 = "Pingv4";
+	private static final String PING_TOPIC_V5 = "Pingv5";
 	private static final String PING_GROUP_ID = "Ping.a";
+	private static final String PING_GROUP_ID_V2 = "Ping.b";
 	private static final String PING_GROUP_ID_V3 = "Ping.c";
+	private static final String PING_GROUP_ID_V4 = "Ping.d";
+	private static final String PING_GROUP_ID_V5 = "Ping.e";
 	private static final int EXPECTED_REGISTERS = 5;
 	private static final int CONSUMERS_QUANTTITY = 2;
 
@@ -60,7 +64,7 @@ public class ConsumerOffsetTest {
 		final ExecutorService executorService = Executors.newFixedThreadPool(CONSUMERS_QUANTTITY);
 		for (int threadNum = 0; threadNum < CONSUMERS_QUANTTITY; threadNum++) {
 
-			final Properties conf = createConsumerConfig(PING_GROUP_ID, kafkaEmbedded.getBrokersAsString());
+			final Properties conf = createConsumerConfig(PING_GROUP_ID_V2, kafkaEmbedded.getBrokersAsString());
 			final KafkaConsumer kafkaConsumer = new KafkaConsumer<>(conf);
 			kafkaConsumer.subscribe(Arrays.asList(topic));
 
@@ -191,7 +195,7 @@ public class ConsumerOffsetTest {
 
 		final KafkaProducer<String, String> producer = new KafkaProducer<>(ProducerExample.config(kafkaEmbedded.getBrokersAsString()));
 		producer.send(new ProducerRecord<>(topic, "hi"));
-		final Properties conf = createConsumerConfig(PING_GROUP_ID, kafkaEmbedded.getBrokersAsString());
+		final Properties conf = createConsumerConfig(PING_GROUP_ID_V4, kafkaEmbedded.getBrokersAsString());
 		conf.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
 		conf.remove(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG);
 
@@ -244,12 +248,12 @@ public class ConsumerOffsetTest {
 	@Test
 	public void testAutoCommitMeetingMaxPollTimeout() throws Exception {
 
-		final String topic = PING_TOPIC_V4;
+		final String topic = PING_TOPIC_V5;
 		declareTopics(1, topic);
 
 		final KafkaProducer<String, String> producer = new KafkaProducer<>(ProducerExample.config(kafkaEmbedded.getBrokersAsString()));
 		producer.send(new ProducerRecord<>(topic, "hi"));
-		final Properties conf = createConsumerConfig(PING_GROUP_ID, kafkaEmbedded.getBrokersAsString());
+		final Properties conf = createConsumerConfig(PING_GROUP_ID_V5, kafkaEmbedded.getBrokersAsString());
 		conf.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
 		conf.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 100);
 
