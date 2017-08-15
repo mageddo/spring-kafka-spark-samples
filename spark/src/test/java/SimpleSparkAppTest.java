@@ -169,10 +169,12 @@ public class SimpleSparkAppTest {
 		.keyBy((Function<SaleSummary, SaleKey>) v1 -> {
 			return new SaleKey(v1.product, v1.store);
 		})
-		.groupByKey();
+		.groupByKey(1); // <<< explicit partitions specify
 //		.reduceByKey((Function2<SaleSummary, SaleSummary, SaleSummary>) (v1, v2) -> {
 //			return new SaleSummary(v1.store, v1.product, v1.amount + v2.amount, v1.units + v2.units);
 //		});
+
+		// the foreach will use the same partitions as groupBy
 		salesSummary.foreachPartition((VoidFunction<Iterator<Tuple2<SaleKey, Iterable<SaleSummary>>>>) salesGroups -> {
 
 			salesGroups.forEachRemaining(saleGroup -> {
