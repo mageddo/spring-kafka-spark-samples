@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Random;
 
 //@RunWith()
 public class SimpleSparkAppTest {
@@ -129,9 +128,22 @@ public class SimpleSparkAppTest {
 	public void reduceGroupAndSaveToRelational() throws IOException {
 
 		final JavaSparkContext sparkContext = getContext();
+		sparkContext.setLogLevel("ERROR");
 
 		final JavaPairRDD<SaleKey, SaleSummary> salesSummary = sparkContext.parallelize(Arrays.asList(
 			new Sale("West", "Apple", 2, 10),
+			new Sale("West", "Apple", 1, 15),
+			new Sale("West", "Apple", 1, 15),
+			new Sale("West", "Apple", 1, 15),
+			new Sale("West", "Apple", 1, 15),
+			new Sale("West", "Apple", 1, 15),
+			new Sale("West", "Apple", 1, 15),
+			new Sale("West", "Apple", 1, 15),
+			new Sale("West", "Apple", 1, 15),
+			new Sale("West", "Apple", 1, 15),
+			new Sale("West", "Apple", 1, 15),
+			new Sale("West", "Apple", 1, 15),
+			new Sale("West", "Apple", 1, 15),
 			new Sale("West", "Apple", 1, 15)
 		))
 		.map((Function<Sale, SaleSummary>) v1 -> {
@@ -142,14 +154,6 @@ public class SimpleSparkAppTest {
 		})
 		.reduceByKey((Function2<SaleSummary, SaleSummary, SaleSummary>) (v1, v2) -> {
 			return new SaleSummary(v1.store, v1.product, v1.amount + v2.amount, v1.units + v2.units);
-		});
-
-		salesSummary.keys().foreachPartition((VoidFunction<Iterator<SaleKey>>) keys -> {
-			keys.forEachRemaining(saleKey -> {
-				// saving to the database
-				saleKey.id = new Long(new Random().nextInt(1000));
-				System.out.println(saleKey);
-			});
 		});
 
 		salesSummary.foreachPartition((VoidFunction<Iterator<Tuple2<SaleKey, SaleSummary>>>) salesByKey -> {
