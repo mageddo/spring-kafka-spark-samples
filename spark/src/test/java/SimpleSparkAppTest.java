@@ -4,16 +4,19 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
-import org.junit.Ignore;
+import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Random;
 
 //@RunWith()
 public class SimpleSparkAppTest {
@@ -66,6 +69,100 @@ public class SimpleSparkAppTest {
 		});
 
 	}
+
+	static class Sale implements Serializable {
+		String store, product;
+		int amount, units;
+
+		public Sale(String store, String product, int amount, int units) {
+			this.store = store;
+			this.product = product;
+			this.amount = amount;
+			this.units = units;
+		}
+	}
+
+	static class SaleSummary implements Serializable {
+		String store, product;
+		int amount, units;
+
+		public SaleSummary(String store, String product, int amount, int units) {
+			this.store = store;
+			this.product = product;
+			this.amount = amount;
+			this.units = units;
+		}
+	}
+
+	static class SaleKey implements Serializable {
+
+		private Long id;
+		private String store, product;
+
+		public SaleKey(String store, String product) {
+			this.store = store;
+			this.product = product;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			final SaleKey proposed = (SaleKey) obj;
+			return proposed.store.equals(this.store) && proposed.product.equals(this.product);
+		}
+
+		@Override
+		public String toString() {
+			final StringBuilder builder = new StringBuilder()//
+				.append("SaleKey [")//
+				.append("id=")//
+				.append(id)//
+				.append(",store=\"")//
+				.append(store).append("\"")//
+				.append(",product=\"")//
+				.append(product).append("\"")//
+				.append("]");
+			return builder.toString();
+		}
+	}
+
+	@Test
+	public void reduceGroupAndSaveToRelational() throws IOException {
+
+		final JavaSparkContext sparkContext = getContext();
+
+		final JavaPairRDD<SaleKey, SaleSummary> salesSummary = sparkContext.parallelize(Arrays.asList(
+			new Sale("West", "Apple", 2, 10),
+			new Sale("West", "Apple", 1, 15)
+		))
+		.map((Function<Sale, SaleSummary>) v1 -> {
+			return new SaleSummary(v1.store, v1.product, v1.amount, v1.units);
+		})
+		.keyBy((Function<SaleSummary, SaleKey>) v1 -> {
+			return new SaleKey(v1.product, v1.store);
+		})
+		.reduceByKey((Function2<SaleSummary, SaleSummary, SaleSummary>) (v1, v2) -> {
+			return new SaleSummary(v1.store, v1.product, v1.amount + v2.amount, v1.units + v2.units);
+		});
+
+		salesSummary.keys().foreachPartition((VoidFunction<Iterator<SaleKey>>) keys -> {
+			keys.forEachRemaining(saleKey -> {
+				// saving to the database
+				saleKey.id = new Long(new Random().nextInt(1000));
+				System.out.println(saleKey);
+			});
+		});
+
+		salesSummary.foreachPartition((VoidFunction<Iterator<Tuple2<SaleKey, SaleSummary>>>) salesByKey -> {
+			salesByKey.forEachRemaining(t -> {
+				// saving to the database
+				System.out.println(t._1 + ": " + t._2);
+			});
+		});
+
+		sparkContext.stop();
+
+	}
+
 
 
 	private JavaSparkContext getContext() {
