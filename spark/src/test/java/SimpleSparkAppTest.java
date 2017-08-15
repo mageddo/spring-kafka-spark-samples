@@ -3,6 +3,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.VoidFunction;
@@ -16,6 +17,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Random;
+import java.util.function.Consumer;
 
 //@RunWith()
 public class SimpleSparkAppTest {
@@ -91,6 +94,14 @@ public class SimpleSparkAppTest {
 			this.amount = amount;
 			this.units = units;
 		}
+
+		@Override
+		public String toString() {
+			return "SaleSummary{" +
+				"store='" + store + '\'' +
+				", product='" + product + '\'' +
+				'}';
+		}
 	}
 
 	static class SaleKey implements Serializable {
@@ -105,8 +116,14 @@ public class SimpleSparkAppTest {
 
 		@Override
 		public boolean equals(Object obj) {
-			final SaleKey proposed = (SaleKey) obj;
-			return proposed.store.equals(this.store) && proposed.product.equals(this.product);
+			return this.hashCode() == obj.hashCode();
+		}
+
+		@Override
+		public int hashCode() {
+			int result = store.hashCode();
+			result = 31 * result + product.hashCode();
+			return result;
 		}
 
 		@Override
@@ -130,7 +147,7 @@ public class SimpleSparkAppTest {
 		final JavaSparkContext sparkContext = getContext();
 		sparkContext.setLogLevel("ERROR");
 
-		final JavaPairRDD<SaleKey, SaleSummary> salesSummary = sparkContext.parallelize(Arrays.asList(
+		final JavaPairRDD<SaleKey, Iterable<SaleSummary>> salesSummary = sparkContext.parallelize(Arrays.asList(
 			new Sale("West", "Apple", 2, 10),
 			new Sale("West", "Apple", 1, 15),
 			new Sale("West", "Apple", 1, 15),
@@ -152,16 +169,30 @@ public class SimpleSparkAppTest {
 		.keyBy((Function<SaleSummary, SaleKey>) v1 -> {
 			return new SaleKey(v1.product, v1.store);
 		})
-		.reduceByKey((Function2<SaleSummary, SaleSummary, SaleSummary>) (v1, v2) -> {
-			return new SaleSummary(v1.store, v1.product, v1.amount + v2.amount, v1.units + v2.units);
-		});
+		.groupByKey();
+//		.reduceByKey((Function2<SaleSummary, SaleSummary, SaleSummary>) (v1, v2) -> {
+//			return new SaleSummary(v1.store, v1.product, v1.amount + v2.amount, v1.units + v2.units);
+//		});
+		salesSummary.foreachPartition((VoidFunction<Iterator<Tuple2<SaleKey, Iterable<SaleSummary>>>>) salesGroups -> {
 
-		salesSummary.foreachPartition((VoidFunction<Iterator<Tuple2<SaleKey, SaleSummary>>>) salesByKey -> {
-			salesByKey.forEachRemaining(t -> {
-				// saving to the database
-				System.out.println(t._1 + ": " + t._2);
+			salesGroups.forEachRemaining(saleGroup -> {
+
+				System.out.printf("key=%s%n", saleGroup._1); // save the key
+				saleGroup._1.id = (long) new Random().nextInt(100_000);
+
+				saleGroup._2.forEach(saleSummary -> {
+					System.out.printf("\tid=%s, value=%s%n", saleGroup._1.id, saleSummary); // save the value
+				});
+
 			});
 		});
+
+//		salesSummary.foreachPartition((VoidFunction<Iterator<Tuple2<SaleKey, SaleSummary>>>) salesByKey -> {
+//			salesByKey.forEachRemaining(t -> {
+//				// saving to the database
+//				System.out.println(t._1 + ": " + t._2);
+//			});
+//		});
 
 		sparkContext.stop();
 
