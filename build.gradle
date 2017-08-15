@@ -49,6 +49,20 @@ project(":spark"){
 
 }
 
+project(":spark-scala"){
+
+	apply plugin: 'scala'
+
+	dependencies {
+
+		compile 'org.scala-lang:scala-library:2.11.8'
+		compile "org.scala-lang:scala-compiler:2.11.8"
+		compile group: 'org.apache.spark', name: 'spark-core_2.11', version: '2.1.1'
+	}
+
+}
+
+
 project(":kafka-spring"){
 
 	ext {
