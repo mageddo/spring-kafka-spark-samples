@@ -47,7 +47,7 @@ project(":spark"){
 		compile group: 'org.apache.spark', name: 'spark-core_2.10', version: '2.1.1'
 	}
 
-	mainClassName = ''
+	mainClassName = 'com.mageddo.spark.SaveJDBCMain'
 
 }
 
