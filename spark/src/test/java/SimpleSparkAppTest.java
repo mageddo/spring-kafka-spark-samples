@@ -1,3 +1,6 @@
+import com.mageddo.spark.vo.Sale;
+import com.mageddo.spark.vo.SaleKey;
+import com.mageddo.spark.vo.SaleSummary;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -71,76 +74,6 @@ public class SimpleSparkAppTest {
 		});
 
 	}
-
-	static class Sale implements Serializable {
-		String store, product;
-		int amount, units;
-
-		public Sale(String store, String product, int amount, int units) {
-			this.store = store;
-			this.product = product;
-			this.amount = amount;
-			this.units = units;
-		}
-	}
-
-	static class SaleSummary implements Serializable {
-		String store, product;
-		int amount, units;
-
-		public SaleSummary(String store, String product, int amount, int units) {
-			this.store = store;
-			this.product = product;
-			this.amount = amount;
-			this.units = units;
-		}
-
-		@Override
-		public String toString() {
-			return "SaleSummary{" +
-				"store='" + store + '\'' +
-				", product='" + product + '\'' +
-				'}';
-		}
-	}
-
-	static class SaleKey implements Serializable {
-
-		private Long id;
-		private String store, product;
-
-		public SaleKey(String store, String product) {
-			this.store = store;
-			this.product = product;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			return this.hashCode() == obj.hashCode();
-		}
-
-		@Override
-		public int hashCode() {
-			int result = store.hashCode();
-			result = 31 * result + product.hashCode();
-			return result;
-		}
-
-		@Override
-		public String toString() {
-			final StringBuilder builder = new StringBuilder()//
-				.append("SaleKey [")//
-				.append("id=")//
-				.append(id)//
-				.append(",store=\"")//
-				.append(store).append("\"")//
-				.append(",product=\"")//
-				.append(product).append("\"")//
-				.append("]");
-			return builder.toString();
-		}
-	}
-
 	@Test
 	public void reduceGroupAndSaveToRelational() throws IOException {
 
