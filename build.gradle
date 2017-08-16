@@ -54,6 +54,7 @@ project(":spark"){
 project(":spark-scala"){
 
 	apply plugin: 'scala'
+	apply plugin: 'idea'
 
 	dependencies {
 

@@ -43,18 +43,18 @@ public class SaveJDBCMain {
 			.keyBy((Function<SaleSummary, SaleKey>) v1 -> {
 				return new SaleKey(v1.product, v1.store);
 			})
-			.groupByKey(1); // <<< explicit partitions specify
+			.groupByKey(10); // <<< explicit partitions specify
 
 		// the foreach will use the same partitions as groupBy
 		salesSummary.foreachPartition((VoidFunction<Iterator<Tuple2<SaleKey, Iterable<SaleSummary>>>>) salesGroups -> {
 
 			salesGroups.forEachRemaining(saleGroup -> {
 
-				System.out.printf("key=%s%n", saleGroup._1); // save the key
+				System.out.printf("key=%s, thread=%s%n", saleGroup._1, Thread.currentThread().getId()); // save the key
 				saleGroup._1.id = (long) new Random().nextInt(100_000);
 
 				saleGroup._2.forEach(saleSummary -> {
-					System.out.printf("\tid=%s, value=%s%n", saleGroup._1.id, saleSummary); // save the value
+					System.out.printf("\tid=%s, value=%s, thread=%s%n", saleGroup._1.id, saleSummary, Thread.currentThread().getId()); // save the value
 				});
 
 			});
@@ -68,7 +68,7 @@ public class SaveJDBCMain {
 
 		final SparkConf sparkConf = new SparkConf()
 			.setAppName("testWordCounter")
-			.setMaster("local[50]")
+			.setMaster("local[2]")
 			.set("spark.driver.allowMultipleContexts", "true");
 		return new JavaSparkContext(sparkConf);
 	}
