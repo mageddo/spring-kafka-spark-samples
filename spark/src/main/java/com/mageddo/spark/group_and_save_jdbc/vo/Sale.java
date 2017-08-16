@@ -1,4 +1,4 @@
-package com.mageddo.spark.groupandsave.vo;
+package com.mageddo.spark.group_and_save_jdbc.vo;
 
 import java.io.Serializable;
 
