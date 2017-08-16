@@ -1,14 +1,12 @@
-import com.mageddo.spark.vo.Sale;
-import com.mageddo.spark.vo.SaleKey;
-import com.mageddo.spark.vo.SaleSummary;
+import com.mageddo.spark.groupandsave.vo.Sale;
+import com.mageddo.spark.groupandsave.vo.SaleKey;
+import com.mageddo.spark.groupandsave.vo.SaleSummary;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -17,11 +15,9 @@ import scala.Tuple2;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Random;
-import java.util.function.Consumer;
 
 //@RunWith()
 public class SimpleSparkAppTest {
