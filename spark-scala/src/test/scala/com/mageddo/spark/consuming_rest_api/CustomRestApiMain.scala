@@ -2,21 +2,22 @@ package com.mageddo.spark.consuming_rest_api
 
 import java.lang.Math._
 
+import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 ;
 
 object CustomRestApiMain {
 
 	/**
-		* Withdraw users request on batches of 100k
+		* Withdraw users request on batches
 		*
 		* @param args
 		*/
 	def main(args: Array[String]) {
-		val ctx = getContext
+
+		val sc = getContext
 
 		val restPageSize = 10
-
 		// count restPages GET /page/count
 		val restPages = 100
 
@@ -29,14 +30,13 @@ object CustomRestApiMain {
 
 			val startRestPage = (fileNumber - 1) * restPageSize + 1
 			val endRestPage = fileNumber * restPageSize
-			val rdd = ctx.range(startRestPage, endRestPage)
-
-			rdd.map{ page =>
+			val rdd = sc.range(startRestPage, endRestPage)
+			.flatMap{ page =>
 
 				// download page withdraws
 				// myRest?page=1
 
-				(fileNumber, "Marjorie", 10.95) //, ("Mark", 8.98)
+				List((fileNumber, "Marjorie", 10.95), (fileNumber, "Mark", 8.98))
 			}
 			.foreach { case (fileNumber, name, value) =>
 				println(fileNumber, name, value)
@@ -44,9 +44,6 @@ object CustomRestApiMain {
 			println("===============================")
 
 		}
-
-
-
 
 	}
 
