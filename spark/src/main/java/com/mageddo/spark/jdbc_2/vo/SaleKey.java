@@ -1,4 +1,4 @@
-package com.mageddo.spark.vo;
+package com.mageddo.spark.jdbc_2.vo;
 
 import java.io.Serializable;
 

@@ -1,17 +1,14 @@
-package com.mageddo.spark;
+package com.mageddo.spark.jdbc_2;
 
-import com.mageddo.spark.vo.Sale;
-import com.mageddo.spark.vo.SaleKey;
-import com.mageddo.spark.vo.SaleSummary;
+
+import com.mageddo.spark.jdbc_2.vo.Sale;
+import com.mageddo.spark.jdbc_2.vo.SaleKey;
+import com.mageddo.spark.jdbc_2.vo.SaleSummary;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.VoidFunction;
-import scala.Tuple2;
 
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Random;
 
 public class SaveJDBCMain {
@@ -37,16 +34,16 @@ public class SaveJDBCMain {
 			new Sale("West", "Apple", 1, 15),
 			new Sale("West", "Apple", 1, 15)
 		))
-			.map((Function<Sale, SaleSummary>) v1 -> {
+			.map( v1 -> {
 				return new SaleSummary(v1.store, v1.product, v1.amount, v1.units);
 			})
-			.keyBy((Function<SaleSummary, SaleKey>) v1 -> {
+			.keyBy( v1 -> {
 				return new SaleKey(v1.product, v1.store);
 			})
 			.groupByKey(1); // <<< explicit partitions specify
 
 		// the foreach will use the same partitions as groupBy
-		salesSummary.foreachPartition((VoidFunction<Iterator<Tuple2<SaleKey, Iterable<SaleSummary>>>>) salesGroups -> {
+		salesSummary.foreachPartition((salesGroups -> {
 
 			salesGroups.forEachRemaining(saleGroup -> {
 
@@ -58,7 +55,7 @@ public class SaveJDBCMain {
 				});
 
 			});
-		});
+		}));
 
 
 		sparkContext.stop();
