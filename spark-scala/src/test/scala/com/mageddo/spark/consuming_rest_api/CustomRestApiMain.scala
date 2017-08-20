@@ -1,6 +1,8 @@
 package com.mageddo.spark.consuming_rest_api
 
 import java.lang.Math._
+import java.lang.String.valueOf
+import java.lang.System._
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
@@ -30,7 +32,7 @@ object CustomRestApiMain {
 
 			val startRestPage = (fileNumber - 1) * restPageSize + 1
 			val endRestPage = fileNumber * restPageSize
-			val rdd = sc.range(startRestPage, endRestPage)
+			sc.range(startRestPage, endRestPage)
 			.flatMap{ page =>
 
 				// download page withdraws
@@ -38,6 +40,8 @@ object CustomRestApiMain {
 
 				List((fileNumber, "Marjorie", 10.95), (fileNumber, "Mark", 8.98))
 			}
+			//.saveAsTextFile(s"${nanoTime()}.txt") // here you can save every batch to a separated file
+
 			.foreach { case (fileNumber, name, value) =>
 				println(fileNumber, name, value)
 			}
