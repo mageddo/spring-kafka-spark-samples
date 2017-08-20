@@ -1,14 +1,11 @@
 package com.mageddo.spark.consuming_rest_api
 
 import java.lang.Math._
-import java.lang.String.valueOf
-import java.lang.System._
 
-import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 ;
 
-object CustomRestApiMain {
+object ConsumeRestAndSaveToManyFilesMain {
 
 	/**
 		* Withdraw users request on batches
