@@ -27,14 +27,14 @@ public class SaveToJDBCPoolMain {
 //			.set("spark.cores.max","3")
 //			.setMaster("spark://localhost:3333");
 //			.setMaster("spark://typer-pc:7077");
-			.setMaster("local[2]")
+			.setMaster("local[6]")
 			;
 
 		final JavaSparkContext sc = new JavaSparkContext(sparkConf);
 		sc.setLogLevel("ERROR");
 
 		final List<Integer> numbers = new ArrayList<>();
-		for(int i=0; i < 100_000; i++){
+		for(int i=0; i < 1000_000; i++){
 			numbers.add(i);
 		}
 
@@ -58,7 +58,7 @@ public class SaveToJDBCPoolMain {
 				});
 				// the thread number may change (can have more different numbers than thread concurrent size) it's normal
 				// anyway the parallel thread numbers will respect the master configuration []
-				System.out.printf("\tcounter=%d, thread=%s%n", counter.get(), Thread.currentThread().getId());
+				System.out.printf("\tcounter=%d, thread=%s, idle=%d%n", counter.get(), Thread.currentThread().getId(), DBUtils.getDatasource().getActive() + DBUtils.getDatasource().getIdle());
 			}
 
 		})
