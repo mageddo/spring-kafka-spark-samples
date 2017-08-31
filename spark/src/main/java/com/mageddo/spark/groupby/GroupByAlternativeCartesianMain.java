@@ -15,11 +15,9 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Sum the repeated numbers, you can use it as standalone spark or submit it to a cluster
+ * It's a alternative to groupBy but it is so slow
  *
- * Save to jdbc database using foreach, use many partitions and the thread numbers same as connection pool size
- * If you put more threads than connections then will get "Timeout: Pool empty"
- *
+ * 1M => more than 1m (I have not waited)
  */
 public class GroupByAlternativeCartesianMain {
 

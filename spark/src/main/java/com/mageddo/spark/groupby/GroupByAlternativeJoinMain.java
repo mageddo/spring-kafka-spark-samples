@@ -12,11 +12,11 @@ import java.util.Random;
 import java.util.UUID;
 
 /**
- * Sum the repeated numbers, you can use it as standalone spark or submit it to a cluster
+ * It is a alternative to GroupBy when the key values are so many, but it is a bite slow
  *
- * Save to jdbc database using foreach, use many partitions and the thread numbers same as connection pool size
- * If you put more threads than connections then will get "Timeout: Pool empty"
+ * 1M => 17s
  *
+ * 1M with 0->10 ms to save 500k Years and 0->10ms to save 1M Movies => 19m
  */
 public class GroupByAlternativeJoinMain {
 
@@ -33,7 +33,7 @@ public class GroupByAlternativeJoinMain {
 
 		final List<Movie> numbers = new ArrayList<>();
 		for(int i=0; i < 1_000_000; i++){
-			numbers.add(new Movie(String.valueOf(i), new Random().nextInt(50_0000)));
+			numbers.add(new Movie(String.valueOf(i), new Random().nextInt(500_000)));
 		}
 
 		final JavaPairRDD<Year, Movie> movies = sc.parallelize(numbers) // creating rdd from list
@@ -51,6 +51,9 @@ public class GroupByAlternativeJoinMain {
 				// simulating save
 				t._1.id = UUID.randomUUID();
 				years.add(t);
+				try {
+					Thread.sleep(new Random().nextInt(10));
+				} catch (InterruptedException e) {}
 			});
 			return years.iterator();
 		});
@@ -61,6 +64,9 @@ public class GroupByAlternativeJoinMain {
 		.foreachPartition(it -> { // saving each movie correlating with the Year id
 			it.forEachRemaining(t -> {
 //				System.out.printf("years=%s, movie=%s%n", t._1, t._2._2);
+				try {
+					Thread.sleep(new Random().nextInt(10));
+				} catch (InterruptedException e) {}
 			});
 		});
 
