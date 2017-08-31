@@ -47,16 +47,20 @@ public class GroupByAlternativeJoinMain {
 
 		// saving the Years to database and mapping the saved id
 		.mapPartitionsToPair(it -> {
-			it.forEachRemaining();
-			it._1.id = UUID.randomUUID();
+			it.forEachRemaining(t -> {
+				// simulating save
+				t._1.id = UUID.randomUUID();
+			});
 			return it;
 		});
 		System.out.printf("count=%d, years=%s%n", yearsKeys.count(), yearsKeys.collect());
 
 
 		yearsKeys.join(movies) // join the movies with the saved Years
-		.foreach(t -> { // saving each movie correlating with the Year id
-			System.out.printf("years=%s, movie=%s%n", t._1, t._2._2);
+		.foreachPartition(it -> { // saving each movie correlating with the Year id
+			it.forEachRemaining(t -> {
+				System.out.printf("years=%s, movie=%s%n", t._1, t._2._2);
+			});
 		});
 
 		sc.stop();
