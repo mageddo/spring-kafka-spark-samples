@@ -37,7 +37,6 @@ public class GroupByAlternativeJoinMain {
 		}
 
 		final JavaPairRDD<Year, Movie> movies = sc.parallelize(numbers) // creating rdd from list
-
 		// mapping the Years
 		.mapToPair(m -> {
 			return new Tuple2<>(m.year, m);
@@ -47,19 +46,21 @@ public class GroupByAlternativeJoinMain {
 
 		// saving the Years to database and mapping the saved id
 		.mapPartitionsToPair(it -> {
+			final List<Tuple2<Year, Movie>> years = new ArrayList<>();
 			it.forEachRemaining(t -> {
 				// simulating save
 				t._1.id = UUID.randomUUID();
+				years.add(t);
 			});
-			return it;
+			return years.iterator();
 		});
-		System.out.printf("count=%d, years=%s%n", yearsKeys.count(), yearsKeys.collect());
+//		System.out.printf("count=%d, years=%s%n", yearsKeys.count(), yearsKeys.collect());
 
 
 		yearsKeys.join(movies) // join the movies with the saved Years
 		.foreachPartition(it -> { // saving each movie correlating with the Year id
 			it.forEachRemaining(t -> {
-				System.out.printf("years=%s, movie=%s%n", t._1, t._2._2);
+//				System.out.printf("years=%s, movie=%s%n", t._1, t._2._2);
 			});
 		});
 
