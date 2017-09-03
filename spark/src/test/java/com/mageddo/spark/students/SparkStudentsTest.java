@@ -68,6 +68,7 @@ public class SparkStudentsTest {
 	@Test
 	public void groupAndTransport() throws Exception {
 		new SparkStudents().groupAndTransport(jsonFile.getAbsolutePath());
+		System.out.println();
 	}
 
 }

@@ -7,16 +7,12 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import scala.Tuple2;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 import static com.mageddo.spark.students.DBUtils.getConnection;
 
@@ -27,30 +23,33 @@ public class SparkStudents {
 	public void groupAndTransport(String jsonPath) throws Exception {
 
 		final JavaSparkContext sc = createContext();
-		final JavaPairRDD<Student, Student> studentsPair = sc.textFile(jsonPath)
+		final JavaPairRDD<String, Student> studentsPair = sc.textFile(jsonPath)
 		.mapToPair(line -> {
 			final Student student = getMapper().readValue(line, Student.class);
-			student.name = String.valueOf(System.nanoTime());
-			return new Tuple2<>(student, student);
-		});
+			return new Tuple2<>(student.name, student);
+		})
+		.reduceByKey((s1, s2) -> s1) // removing duplicated students
+		.mapToPair(tuple -> new Tuple2<>(tuple._2.schoolName, tuple._2))
+		;
 
-		final JavaPairRDD<Student, Student> savedSchools = studentsPair
-		.distinct()
+		final JavaPairRDD<String, Student> savedSchools = studentsPair
+		.mapToPair(t -> new Tuple2<>(t._2.schoolName, t._2))
+		.reduceByKey((s1, s2) -> s1)
 		.mapPartitionsToPair(it -> {
 
-			final Set<Tuple2<Student, Student>> schools = new HashSet<>();
+			final Set<Tuple2<String, Student>> schools = new HashSet<>();
 			try(Connection conn = getConnection()){
 
 				it.forEachRemaining(tuple -> {
 
 					try(PreparedStatement stm = conn.prepareStatement("INSERT INTO SCHOOL (NAME) VALUES (?)", Statement.RETURN_GENERATED_KEYS)){
 
-						stm.setString(1, tuple._1.schoolName);
+						stm.setString(1, tuple._2.schoolName);
 						stm.executeUpdate();
 
 						try(ResultSet rs = stm.getGeneratedKeys()){
 							if(rs.next()){
-								tuple._1.id = rs.getInt(1);
+								tuple._2.schoolId = rs.getInt(1);
 							}else {
 								throw new IllegalStateException();
 							}
@@ -74,7 +73,7 @@ public class SparkStudents {
 
 					try(PreparedStatement stm = conn.prepareStatement("INSERT INTO STUDENT (SCHOOL_ID, NAME) VALUES (?, ?)")){
 
-						stm.setInt(1, tuple._1.id);
+						stm.setInt(1, tuple._2._1.schoolId);
 						stm.setString(2, tuple._2._2.name);
 						stm.executeUpdate();
 
