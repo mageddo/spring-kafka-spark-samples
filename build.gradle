@@ -45,9 +45,9 @@ project(":spark"){
 	apply plugin: 'application'
 	dependencies {
 		compile group: 'org.apache.spark', name: 'spark-core_2.11', version: '2.2.0'
-
+		compile group: 'org.hsqldb', name: 'hsqldb', version: '2.4.0'
 		compile group: 'org.apache.tomcat', name: 'tomcat-jdbc', version: '8.0.23'
-		compile group: 'com.h2database', name: 'h2', version: '1.4.193'
+
 	}
 
 	mainClassName = 'com.mageddo.spark.master_slave.SimpleTask'
