@@ -33,6 +33,32 @@ public class StudentDAO {
 		}
 	}
 
+	public int countStudents() throws SQLException {
+
+		try(PreparedStatement stm = connection.prepareStatement("SELECT COUNT(1) FROM STUDENT")){
+			try(ResultSet rs = stm.executeQuery()){
+
+				while(rs.next()){
+					return rs.getInt(1);
+				}
+				return -1;
+			}
+		}
+	}
+
+	public int countSchools() throws SQLException {
+
+		try(PreparedStatement stm = connection.prepareStatement("SELECT COUNT(1) FROM SCHOOL")){
+			try(ResultSet rs = stm.executeQuery()){
+
+				while(rs.next()){
+					return rs.getInt(1);
+				}
+				return -1;
+			}
+		}
+	}
+
 	public void truncateDB() throws SQLException {
 		try(PreparedStatement stm = this.connection.prepareStatement("TRUNCATE SCHEMA public AND COMMIT")){
 			stm.executeUpdate();

@@ -2,8 +2,11 @@ package com.mageddo.spark.students;
 
 import com.mageddo.spark.students.dao.StudentDAO;
 import com.mageddo.spark.students.vo.Student;
+import org.apache.commons.lang3.time.StopWatch;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -62,9 +65,12 @@ public class SparkStudentsTest {
 	@Test
 	public void groupAndTransport__PerformanceTest() throws Exception {
 
+		final StopWatch stopWatch = new StopWatch();
+		stopWatch.start();
+
 		// creating a temp json to test
 		final File jsonFile = folder.newFile("spark.tmp");
-		final int students = 1000;
+		final int students = 10_000_000;
 		try(OutputStream out = new BufferedOutputStream(new FileOutputStream(jsonFile))){
 			for(int i = students; i > 0; i--){
 				final Student student = new Student(String.valueOf(new Random().nextInt(students)), String.valueOf(new Random().nextInt(students / 2)));
@@ -75,6 +81,10 @@ public class SparkStudentsTest {
 
 		new SparkStudents().groupAndTransport(jsonFile.getAbsolutePath());
 
+		try(Connection connection = getConnection()){
+			final StudentDAO dao = new StudentDAO(connection);
+			System.out.printf("students=%d, schools=%d, time=%d%n", dao.countStudents(), dao.countSchools(), stopWatch.getTime());
+		}
 	}
 
 	@Test

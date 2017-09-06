@@ -90,13 +90,11 @@ public class SparkStudents {
 
 		});
 
-		sc.close();
-
 	}
 
 	static JavaSparkContext createContext() {
 		final SparkConf sparkConf = new SparkConf()
-			.setAppName("WordCount")
+			.setAppName("StudentsMapReduce")
 			.setMaster("local");
 		final JavaSparkContext sc = new JavaSparkContext(sparkConf);
 		sc.setLogLevel("ERROR");
