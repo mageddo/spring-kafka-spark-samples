@@ -1,5 +1,6 @@
 include ':kafka'
 include ':spark'
+include ':spark-save-custom-output'
 include ':spark-scala'
 include ':kafka-spring'
 include ':spring-kafka-embedded-test'
