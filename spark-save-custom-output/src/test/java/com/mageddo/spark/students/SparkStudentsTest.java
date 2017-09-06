@@ -63,6 +63,7 @@ public class SparkStudentsTest {
 
 
 	@Test
+	@Ignore
 	public void groupAndTransport__PerformanceTest() throws Exception {
 
 		final StopWatch stopWatch = new StopWatch();
