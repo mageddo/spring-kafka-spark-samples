@@ -33,8 +33,11 @@ public class SparkStudents {
 		;
 
 		final JavaPairRDD<String, Student> savedSchools = studentsPair
-		.mapToPair(t -> new Tuple2<>(t._2.schoolName, t._2))
+
+		// Remove all duplicated schools
 		.reduceByKey((s1, s2) -> s1)
+
+		// Saving each school and mapping it id back
 		.mapPartitionsToPair(it -> {
 
 			final Set<Tuple2<String, Student>> schools = new HashSet<>();

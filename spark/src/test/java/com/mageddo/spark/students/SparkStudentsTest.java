@@ -53,7 +53,7 @@ public class SparkStudentsTest {
 
 		// creating a temp json to test
 		jsonFile = folder.newFile("spark.tmp");
-		final int students = 1_000_000;
+		final int students = 10_000_000;
 		try(OutputStream out = new BufferedOutputStream(new FileOutputStream(jsonFile))){
 			for(int i = students; i > 0; i--){
 				final Student student = new Student(String.valueOf(new Random().nextInt(students)), String.valueOf(new Random().nextInt(students / 2)));
