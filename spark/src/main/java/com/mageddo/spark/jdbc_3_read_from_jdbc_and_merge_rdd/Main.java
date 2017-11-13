@@ -1,4 +1,4 @@
-package com.mageddo.spark.read_from_jdbc_and_merge_rdd;
+package com.mageddo.spark.jdbc_3_read_from_jdbc_and_merge_rdd;
 
 import java.util.Arrays;
 import java.util.Properties;
