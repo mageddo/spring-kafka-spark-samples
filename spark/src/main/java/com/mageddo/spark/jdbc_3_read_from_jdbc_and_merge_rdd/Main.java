@@ -13,38 +13,46 @@ import org.apache.spark.sql.catalyst.expressions.GenericRow;
 
 public class Main {
 
-    public static void main(String[] args) {
+		public static void main(String[] args) {
 
-        final Properties jdbcProps = new Properties();
-        jdbcProps.put("user", "root");
-        jdbcProps.put("password", "root");
+			final Properties jdbcProps = new Properties();
+			jdbcProps.put("user", "root");
+			jdbcProps.put("password", "root");
 
-        final JavaSparkContext sc = getContext();
-        try(final SparkSession session = new SparkSession(sc.sc())){
-            final Dataset<Row> dataSet = session.sqlContext()
-                    .read().jdbc("jdbc:mysql://mysql-server.dev:3306/TEMP", "USER", jdbcProps)
-                    .select("IDT_USER").where("NUM_AGE > 10");
+			final JavaSparkContext sc = getContext();
+			try(final SparkSession session = new SparkSession(sc.sc())){
 
-            final JavaPairRDD<Integer, Row> missingUsers = dataSet.rdd().toJavaRDD()
-                    .keyBy(x -> x.getInt(0))
-                    .subtract(
-                            sc.parallelize(Arrays.asList((Row) new GenericRow(new Object[] { 1 }),
-                                    new GenericRow(new Object[] { 2 })))
-                                    .keyBy(x -> x.getInt(0))
-                    ).sortByKey();
+				final Dataset<Row> dataSet = session.sqlContext()
+					.read().jdbc("jdbc:mysql://mysql-server.dev:3306/TEMP", "USER", jdbcProps)
+					.select("IDT_USER").where("NUM_AGE > 10");
 
-            missingUsers.foreachPartition(it -> {
-                it.forEachRemaining(u -> System.out.println(u._1));
-            });
-        };
-    }
+				final JavaPairRDD<Integer, Row> missingUsers = dataSet.rdd().toJavaRDD()
+					.keyBy(x -> x.getInt(0))
+					.subtract(
+							sc.parallelize(Arrays.asList((Row) new GenericRow(new Object[] { 1 }),
+									new GenericRow(new Object[] { 2 })))
+									.keyBy(x -> x.getInt(0))
+					).sortByKey();
 
-    private static JavaSparkContext getContext() {
+				missingUsers.foreachPartition(it -> {
+					it.forEachRemaining(u -> System.out.println(u._1));
+				});
 
-        final SparkConf sparkConf = new SparkConf()
-                .setAppName("testWordCounter")
-                .setMaster("local[2]")
-                .set("spark.driver.allowMultipleContexts", "true");
-        return new JavaSparkContext(sparkConf);
-    }
+			};
+		}
+
+		private static JavaSparkContext getContext() {
+
+				final SparkConf sparkConf = new SparkConf()
+				.setAppName("testWordCounter")
+				.setMaster("local[2]")
+				.set("spark.driver.allowMultipleContexts", "true")
+				.set("spark.cassandra.connection.host", "cassandra.dev")
+				.set("spark.cassandra.connection.port", "9042")
+				.set("spark.cassandra.auth.username", "cassandra")
+				.set("spark.cassandra.auth.password", "cassandra")
+				.set("spark.cassandra.input.consistency.level", "ONE")
+				.set("spark.cassandra.output.consistency.level", "ONE");
+				return new JavaSparkContext(sparkConf);
+		}
 }
