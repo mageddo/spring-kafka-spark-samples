@@ -1,6 +1,6 @@
-import com.mageddo.spark.group_and_save_jdbc.vo.Sale;
-import com.mageddo.spark.group_and_save_jdbc.vo.SaleKey;
-import com.mageddo.spark.group_and_save_jdbc.vo.SaleSummary;
+import com.mageddo.spark.jdbc_2.vo.Sale;
+import com.mageddo.spark.jdbc_2.vo.SaleKey;
+import com.mageddo.spark.jdbc_2.vo.SaleSummary;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;

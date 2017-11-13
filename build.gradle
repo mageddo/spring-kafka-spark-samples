@@ -4,16 +4,6 @@ buildscript {
 	}
 }
 
-//jar {
-//	baseName = "distributed-process-samples"
-//	version = "0.1.0"
-//}
-//
-//ext {
-//	springBootVersion = "1.5.3.RELEASE"
-//	activeMQVersion = "5.14.5"
-//}
-
 allprojects {
 
 	repositories {
@@ -44,27 +34,38 @@ subprojects {
 project(":spark"){
 	apply plugin: 'application'
 	dependencies {
-		compile group: 'org.apache.spark', name: 'spark-core_2.10', version: '2.1.1'
-		compile group: 'org.apache.spark', name: 'spark-sql_2.10', version: '2.1.1'
+		compile group: 'org.apache.spark', name: 'spark-core_2.11', version: '2.2.0'
+		compile group: 'org.apache.spark', name: 'spark-sql_2.11', version: '2.2.0'
 
 		compile group: 'mysql', name: 'mysql-connector-java', version: '5.1.6'
+		compile group: 'org.hsqldb', name: 'hsqldb', version: '2.4.0'
+		compile group: 'org.apache.tomcat', name: 'tomcat-jdbc', version: '8.0.23'
+
 
 	}
 
-	mainClassName = 'com.mageddo.spark.SaveJDBCMain'
+	mainClassName = 'com.mageddo.spark.master_slave.SimpleTask'
 
+}
+
+project(":spark-save-custom-output"){
+	dependencies {
+		compile group: 'org.apache.spark', name: 'spark-core_2.11', version: '2.2.0'
+		compile group: 'org.hsqldb', name: 'hsqldb', version: '2.4.0'
+		compile group: 'org.apache.tomcat', name: 'tomcat-jdbc', version: '8.0.23'
+	}
 }
 
 project(":spark-scala"){
 
 	apply plugin: 'scala'
-	apply plugin: 'idea'
 
 	dependencies {
 
 		compile 'org.scala-lang:scala-library:2.11.8'
 		compile "org.scala-lang:scala-compiler:2.11.8"
-		compile group: 'org.apache.spark', name: 'spark-core_2.11', version: '2.1.1'
+		compile group: 'org.apache.spark', name: 'spark-core_2.11', version: '2.2.0'
+
 	}
 
 }
