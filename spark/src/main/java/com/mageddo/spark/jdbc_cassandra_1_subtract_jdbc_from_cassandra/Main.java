@@ -34,48 +34,20 @@ public class Main {
 				.read().jdbc("jdbc:mysql://mysql-server.dev:3306/TEMP", "USER", jdbcProps)
 				.select("IDT_USER").where("NUM_AGE > 10");
 
-			final RowReaderFactory<Row> readerFactory = new RowReaderFactory<Row>() {
-				@Override
-				public RowReader<Row> rowReader(TableDef table, IndexedSeq<ColumnRef> selectedColumns) {
-					return new RowReader<Row>() {
-
-						@Override
-						public Row read(com.datastax.driver.core.Row row, CassandraRowMetadata rowMetaData) {
-							final GenericRow r = new GenericRow(row.getInt("idt_user"));
-							return r;
-						}
-
-						@Override
-						public Option<Seq<ColumnRef>> neededColumns() {
-							return Option.empty();
-						}
-					};
-				}
-
-				@Override
-				public Class<Row> targetClass() {
-					return Row.class;
-				}
-			};
-			
 			final JavaPairRDD<Integer, Row> cassandraRecords = CassandraJavaUtil.javaFunctions(sc)
-				.cassandraTable("ps_accounting_adm", "user", readerFactory)
+				.cassandraTable("ps_accounting_adm", "user", new UserReaderFactory())
 				.keyBy(r -> r.getInt(0));
-//				.cassandraTable("ps_accounting_adm", "user", CassandraJavaUtil.mapRowTo(User.class))
-//				.select(
-//					column("idt_user").as("id")
-//				);
 
-//				.foreachPartition(it -> {
-//					it.forEachRemaining(u -> System.out.println("id" + u.getInt(0)));
-//				});
+				cassandraRecords.foreachPartition(it -> {
+					it.forEachRemaining(u -> System.out.printf("id=%d,", u._2.get(0)));
+				});
 
 			final JavaPairRDD<Integer, Row> missingUsers = dataSet.rdd().toJavaRDD()
 				.keyBy(x -> x.getInt(0))
 				.subtract(cassandraRecords).sortByKey();
 
 			missingUsers.foreachPartition(it -> {
-				it.forEachRemaining(u -> System.out.println(u._1));
+				it.forEachRemaining(u -> System.out.printf("%d, ", u._1));
 			});
 
 		};
@@ -95,4 +67,29 @@ public class Main {
 			.set("spark.cassandra.output.consistency.level", "ONE");
 		return new JavaSparkContext(sparkConf);
 	}
+
+	static class UserReaderFactory implements RowReaderFactory<Row> {
+
+		@Override
+		public RowReader<Row> rowReader(TableDef table, IndexedSeq<ColumnRef> selectedColumns) {
+			return new RowReader<Row>() {
+
+				@Override
+				public Row read(com.datastax.driver.core.Row row, CassandraRowMetadata rowMetaData) {
+					final GenericRow r = new GenericRow(row.getInt("idt_user"));
+					return r;
+				}
+
+				@Override
+				public Option<Seq<ColumnRef>> neededColumns() {
+					return Option.empty();
+				}
+			};
+		}
+
+		@Override
+		public Class<Row> targetClass() {
+			return Row.class;
+		}
+	};
 }
