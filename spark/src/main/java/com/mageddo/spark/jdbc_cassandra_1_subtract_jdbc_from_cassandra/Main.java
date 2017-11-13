@@ -30,19 +30,18 @@ public class Main {
 		final JavaSparkContext sc = getContext();
 		try(final SparkSession session = new SparkSession(sc.sc())){
 
-			final Dataset<Row> dataSet = session.sqlContext()
-				.read().jdbc("jdbc:mysql://mysql-server.dev:3306/TEMP", "USER", jdbcProps)
-				.select("IDT_USER").where("NUM_AGE > 10");
-
 			final JavaPairRDD<Integer, Row> cassandraRecords = CassandraJavaUtil.javaFunctions(sc)
 				.cassandraTable("ps_accounting_adm", "user", new UserReaderFactory())
 				.keyBy(r -> r.getInt(0));
 
 				cassandraRecords.foreachPartition(it -> {
-					it.forEachRemaining(u -> System.out.printf("id=%d,", u._2.get(0)));
+					it.forEachRemaining(u -> System.out.printf("id=%d,", u._2.getInt(0)));
 				});
 
-			final JavaPairRDD<Integer, Row> missingUsers = dataSet.rdd().toJavaRDD()
+			final Dataset<Row> usersJdbc = session.sqlContext()
+				.read().jdbc("jdbc:mysql://mysql-server.dev:3306/TEMP", "USER", jdbcProps)
+				.select("IDT_USER").where("NUM_AGE > 10");
+			final JavaPairRDD<Integer, Row> missingUsers = usersJdbc.rdd().toJavaRDD()
 				.keyBy(x -> x.getInt(0))
 				.subtract(cassandraRecords).sortByKey();
 
@@ -68,7 +67,7 @@ public class Main {
 		return new JavaSparkContext(sparkConf);
 	}
 
-	static class UserReaderFactory implements RowReaderFactory<Row> {
+	static class UserReaderFactory implements RowReaderFactory<Row>, java.io.Serializable {
 
 		@Override
 		public RowReader<Row> rowReader(TableDef table, IndexedSeq<ColumnRef> selectedColumns) {
@@ -76,7 +75,7 @@ public class Main {
 
 				@Override
 				public Row read(com.datastax.driver.core.Row row, CassandraRowMetadata rowMetaData) {
-					final GenericRow r = new GenericRow(row.getInt("idt_user"));
+					final GenericRow r = new GenericRow(new Object[]{Long.valueOf(row.getLong("idt_user")).intValue()});
 					return r;
 				}
 
@@ -91,5 +90,5 @@ public class Main {
 		public Class<Row> targetClass() {
 			return Row.class;
 		}
-	};
+	}
 }
