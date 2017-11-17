@@ -17,7 +17,7 @@ public class Main {
 
 		final JavaStreamingContext sc = getContext(Duration.ofSeconds(2));
 		sc.textFileStream("/tmp/")
-		.map(x -> x)
+//		.map(x -> x)
 		.foreachRDD(rdd -> {
 			rdd.foreachPartition(it -> it.forEachRemaining(System.out::println));
 		});
