@@ -36,6 +36,7 @@ project(":spark"){
 	dependencies {
 		compile group: 'org.apache.spark', name: 'spark-core_2.11', version: '2.2.0'
 		compile group: 'org.apache.spark', name: 'spark-sql_2.11', version: '2.2.0'
+		compile 'org.apache.spark:spark-streaming_2.11:2.2.0'
 
 		compile group: 'mysql', name: 'mysql-connector-java', version: '5.1.6'
 		compile group: 'org.hsqldb', name: 'hsqldb', version: '2.4.0'
@@ -43,7 +44,6 @@ project(":spark"){
 
 		compile group: 'com.datastax.spark', name: 'spark-cassandra-connector_2.11', version: '2.0.5'
 		compile group: 'com.datastax.spark', name: 'spark-cassandra-connector-java_2.11', version: '1.5.2'
-
 
 
 
