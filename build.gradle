@@ -80,7 +80,7 @@ project(":kafka-spring"){
 
 	ext {
 		springBootVersion = "1.5.3.RELEASE"
-		springKafka = "1.2.2.RELEASE"
+		springKafka = "2.1.2.RELEASE"
 	}
 
 	dependencies {
