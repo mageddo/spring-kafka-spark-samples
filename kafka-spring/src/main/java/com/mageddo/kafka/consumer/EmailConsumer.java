@@ -38,7 +38,7 @@ public class EmailConsumer implements RecoveryCallback<Object> {
 
 	@Scheduled(fixedDelay = 10_000)
 	public void send() throws Exception {
-		kafkaTemplate.send(COLOR, String.valueOf(counter.incrementAndGet())).get();
+		kafkaTemplate.send(EMAIL, String.valueOf(counter.incrementAndGet())).get();
 		logger.info("status=posted, counter={}", counter.get());
 	}
 
@@ -56,7 +56,7 @@ public class EmailConsumer implements RecoveryCallback<Object> {
 	@Override
 	public Object recover(RetryContext context) throws Exception {
 		logger.error("status=recovered", context.getLastThrowable());
-		kafkaTemplate.send(COLOR + ".DLQ", context.getAttribute("x")).get();
+		kafkaTemplate.send(EMAIL + ".DLQ", context.getAttribute("x")).get();
 		return null;
 	}
 

@@ -1,6 +1,8 @@
 package com.mageddo.kafka;
 
 import com.mageddo.kafka.message.QueueEnum;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -13,6 +15,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.retry.RecoveryCallback;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
@@ -32,6 +35,8 @@ import java.util.concurrent.Executors;
 @Configuration
 public class Application implements SchedulingConfigurer, InitializingBean {
 
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+
 	@Autowired
 	private KafkaProperties kafkaProperties;
 
@@ -50,7 +55,9 @@ public class Application implements SchedulingConfigurer, InitializingBean {
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		for (QueueEnum queueEnum : QueueEnum.values()) {
-			declareConsumer(queueEnum);
+			if(queueEnum.isAutoConfigure()){
+				declareConsumer(queueEnum);
+			}
 		}
 	}
 
@@ -62,7 +69,8 @@ public class Application implements SchedulingConfigurer, InitializingBean {
 //		factory.getContainerProperties().setAckOnError(false);
 //		factory.getContainerProperties().setAckMode(AbstractMessageListenerContainer.AckMode.MANUAL);
 		factory.setRecoveryCallback(context -> {
-			beanFactory.getBean(queueEnum.getTopic());
+			logger.info("status=recovering, topic={}", queueEnum.getTopic());
+			beanFactory.getBean(queueEnum.getTopic(), RecoveryCallback.class).recover(context);
 			return null;
 		});
 
@@ -78,6 +86,6 @@ public class Application implements SchedulingConfigurer, InitializingBean {
 		retryTemplate.setBackOffPolicy(policy);
 		retryTemplate.setRetryPolicy(retryPolicy);
 		factory.setRetryTemplate(retryTemplate);
-
+		beanFactory.registerSingleton(queueEnum.getFactory(), factory);
 	}
 }

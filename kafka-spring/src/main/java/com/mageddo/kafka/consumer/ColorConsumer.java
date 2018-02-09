@@ -1,5 +1,6 @@
 package com.mageddo.kafka.consumer;
 
+import com.mageddo.kafka.message.QueueEnum;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.mageddo.kafka.message.QueueEnum.Constants.COLOR;
 import static com.mageddo.kafka.message.QueueEnum.Constants.COLOR_FACTORY;
 
-@Component
+@Component(COLOR)
 public class ColorConsumer implements RecoveryCallback<Object> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -62,8 +63,8 @@ public class ColorConsumer implements RecoveryCallback<Object> {
 		return null;
 	}
 
-	@Bean
-	public ConcurrentKafkaListenerContainerFactory colorTopicFactory(){
+	@Bean(COLOR_FACTORY)
+	public ConcurrentKafkaListenerContainerFactory factory(){
 		final ConcurrentKafkaListenerContainerFactory factory = new ConcurrentKafkaListenerContainerFactory<>();
 		factory.setConcurrency(5);
 		factory.setConsumerFactory(new DefaultKafkaConsumerFactory<>(kafkaProperties.buildConsumerProperties()));
@@ -88,7 +89,7 @@ public class ColorConsumer implements RecoveryCallback<Object> {
 	}
 
 	@Bean
-	public KafkaListenerErrorHandler myHandler(){
+	public KafkaListenerErrorHandler colorHandler(){
 		return new KafkaListenerErrorHandler(){
 			@Override
 			public Object handleError(Message<?> message, ListenerExecutionFailedException exception) throws Exception {
