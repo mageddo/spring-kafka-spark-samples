@@ -9,18 +9,21 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-import org.springframework.kafka.listener.AbstractMessageListenerContainer;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.KafkaListenerErrorHandler;
 import org.springframework.kafka.listener.ListenerExecutionFailedException;
 import org.springframework.messaging.Message;
 import org.springframework.retry.RecoveryCallback;
-import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.mageddo.kafka.message.QueueEnum.Constants.COLOR;
+import static com.mageddo.kafka.message.QueueEnum.Constants.COLOR_FACTORY;
 
 @Component
 public class ColorConsumer implements RecoveryCallback<Object> {
@@ -30,9 +33,17 @@ public class ColorConsumer implements RecoveryCallback<Object> {
 	@Autowired
 	private KafkaProperties kafkaProperties;
 
-	@KafkaListener(containerFactory = "colorTopicFactory", topics = "COLOR_TOPIC"
-//		,errorHandler = "myHandler"
-	)
+	@Autowired
+	private KafkaTemplate kafkaTemplate;
+
+	final AtomicInteger counter = new AtomicInteger(0);
+
+	public void send(){
+		kafkaTemplate.send(COLOR, String.valueOf(counter.incrementAndGet()));
+		logger.info("status=posted, counter={}", counter.get());
+	}
+
+	@KafkaListener(containerFactory = COLOR_FACTORY, topics = COLOR  /*,errorHandler = "myHandler" */ )
 //	public void consume(ConsumerRecord<String, String> record, Acknowledgment acknowledgment){
 	public void consume(ConsumerRecord<String, String> record){
 //		new Random().nextBoolean()
@@ -52,45 +63,29 @@ public class ColorConsumer implements RecoveryCallback<Object> {
 	}
 
 	@Bean
-	public ConcurrentKafkaListenerContainerFactory<String, String> colorTopicFactory(){
-		final ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
+	public ConcurrentKafkaListenerContainerFactory colorTopicFactory(){
+		final ConcurrentKafkaListenerContainerFactory factory = new ConcurrentKafkaListenerContainerFactory<>();
 		factory.setConcurrency(5);
 		factory.setConsumerFactory(new DefaultKafkaConsumerFactory<>(kafkaProperties.buildConsumerProperties()));
 //		factory.getContainerProperties().setAckOnError(false);
 //		factory.getContainerProperties().setAckMode(AbstractMessageListenerContainer.AckMode.MANUAL);
 		factory.setRecoveryCallback(ColorConsumer.this);
 
-		final RetryTemplate retryTemplate = new RetryTemplate();
-		retryTemplate.registerListener(new RetryListener() {
-			@Override
-			public <T, E extends Throwable> boolean open(RetryContext context, RetryCallback<T, E> callback) {
-				return true;
-			}
-
-			@Override
-			public <T, E extends Throwable> void close(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {}
-
-			@Override
-			public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
-				logger.info("status=retry");
-				// apos cada falha do consumidor ele cai aqui
-			}
-		});
-
-		ExponentialBackOffPolicy policy = new ExponentialBackOffPolicy();
+		final ExponentialBackOffPolicy policy = new ExponentialBackOffPolicy();
 		policy.setInitialInterval(5000);
 		policy.setMultiplier(1.0);
 		policy.setMaxInterval(5000);
-		retryTemplate.setBackOffPolicy(policy);
 
 		final SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
 		retryPolicy.setMaxAttempts(3);
+
+		final RetryTemplate retryTemplate = new RetryTemplate();
+		retryTemplate.setBackOffPolicy(policy);
 		retryTemplate.setRetryPolicy(retryPolicy);
-//		factory.setRetryTemplate(retryTemplate);
+		factory.setRetryTemplate(retryTemplate);
 
 		return factory;
 	}
-
 
 	@Bean
 	public KafkaListenerErrorHandler myHandler(){
