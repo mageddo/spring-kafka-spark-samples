@@ -1,12 +1,14 @@
 package com.mageddo.kafka.consumer;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.annotation.TopicPartition;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -20,7 +22,9 @@ import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.util.DigestUtils;
 
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -38,15 +42,17 @@ public class EmailConsumer implements RecoveryCallback<Object> {
 
 	@Scheduled(fixedDelay = 10_000)
 	public void send() throws Exception {
-		kafkaTemplate.send(EMAIL, String.valueOf(counter.incrementAndGet())).get();
+			final String object = String.valueOf(counter.incrementAndGet());
+		kafkaTemplate.send(new ProducerRecord<>(EMAIL, object)).get();
 		logger.info("status=posted, counter={}", counter.get());
 	}
 
 	@KafkaListener(containerFactory = EMAIL_FACTORY, topics = EMAIL)
-	public void consume(ConsumerRecord<String, String> record){
-		if(false){
-			logger.info("status=consume-ok, offset={}, record={}", record.offset(), record.value());
+	public void consume(ConsumerRecord<String, String> record) throws InterruptedException {
+		if(new Random().nextBoolean()){
+			logger.info("status=consume-ok, offset={}, partition={}, key={}, record={}", record.offset(), record.partition(), record.key(), record.value());
 //			acknowledgment.acknowledge();
+			Thread.sleep(5000);
 		}else{
 			logger.warn("status=consume-failed, offset={}, record={}", record.offset(), record.value());
 			throw new RuntimeException("consume failed");
@@ -54,9 +60,8 @@ public class EmailConsumer implements RecoveryCallback<Object> {
 	}
 
 	@Override
-	public Object recover(RetryContext context) throws Exception {
-		logger.error("status=recovered", context.getLastThrowable());
-		kafkaTemplate.send(EMAIL + ".DLQ", context.getAttribute("x")).get();
+	public Object recover(RetryContext context) throws Exception { logger.error("status=recovered", context.getLastThrowable());
+		kafkaTemplate.send(EMAIL + ".DLQ", ((ConsumerRecord)context.getAttribute("record")).value()).get();
 		return null;
 	}
 
