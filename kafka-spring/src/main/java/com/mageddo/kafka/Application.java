@@ -85,6 +85,7 @@ public class Application implements SchedulingConfigurer, InitializingBean {
 		final RetryTemplate retryTemplate = new RetryTemplate();
 		retryTemplate.setBackOffPolicy(policy);
 		retryTemplate.setRetryPolicy(retryPolicy);
+		retryTemplate.setThrowLastExceptionOnExhausted(true);
 		factory.setRetryTemplate(retryTemplate);
 		beanFactory.registerSingleton(queueEnum.getFactory(), factory);
 	}

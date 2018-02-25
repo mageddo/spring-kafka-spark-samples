@@ -49,7 +49,7 @@ public class EmailConsumer implements RecoveryCallback<Object> {
 
 	@KafkaListener(containerFactory = EMAIL_FACTORY, topics = EMAIL)
 	public void consume(ConsumerRecord<String, String> record) throws InterruptedException {
-		if(new Random().nextBoolean()){
+		if(false){
 			logger.info("status=consume-ok, offset={}, partition={}, key={}, record={}", record.offset(), record.partition(), record.key(), record.value());
 //			acknowledgment.acknowledge();
 			Thread.sleep(5000);
@@ -60,7 +60,8 @@ public class EmailConsumer implements RecoveryCallback<Object> {
 	}
 
 	@Override
-	public Object recover(RetryContext context) throws Exception { logger.error("status=recovered", context.getLastThrowable());
+	public Object recover(RetryContext context) throws Exception {
+		logger.error("status=recovered", context.getLastThrowable());
 		kafkaTemplate.send(EMAIL + ".DLQ", ((ConsumerRecord)context.getAttribute("record")).value()).get();
 		return null;
 	}
