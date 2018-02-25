@@ -5,30 +5,16 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.annotation.TopicPartition;
-import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
-import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.listener.KafkaListenerErrorHandler;
-import org.springframework.kafka.listener.ListenerExecutionFailedException;
-import org.springframework.messaging.Message;
 import org.springframework.retry.RecoveryCallback;
 import org.springframework.retry.RetryContext;
-import org.springframework.retry.backoff.ExponentialBackOffPolicy;
-import org.springframework.retry.policy.SimpleRetryPolicy;
-import org.springframework.retry.support.RetryTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.util.DigestUtils;
 
-import java.util.Random;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.mageddo.kafka.message.QueueEnum.Constants.*;
+import static com.mageddo.kafka.message.TopicEnum.Constants.EMAIL;
+import static com.mageddo.kafka.message.TopicEnum.Constants.EMAIL_FACTORY;
 
 @Component(EMAIL)
 public class EmailConsumer implements RecoveryCallback<Object> {
@@ -40,7 +26,7 @@ public class EmailConsumer implements RecoveryCallback<Object> {
 
 	final AtomicInteger counter = new AtomicInteger(0);
 
-	@Scheduled(fixedDelay = 10_000)
+//	@Scheduled(fixedDelay = 10_000)
 	public void send() throws Exception {
 			final String object = String.valueOf(counter.incrementAndGet());
 		kafkaTemplate.send(new ProducerRecord<>(EMAIL, object)).get();

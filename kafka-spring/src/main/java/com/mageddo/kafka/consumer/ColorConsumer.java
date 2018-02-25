@@ -1,10 +1,10 @@
 package com.mageddo.kafka.consumer;
 
-import com.mageddo.kafka.message.QueueEnum;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -23,8 +23,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.mageddo.kafka.message.QueueEnum.Constants.COLOR;
-import static com.mageddo.kafka.message.QueueEnum.Constants.COLOR_FACTORY;
+import static com.mageddo.kafka.message.TopicEnum.Constants.COLOR;
+import static com.mageddo.kafka.message.TopicEnum.Constants.COLOR_FACTORY;
 
 @Component(COLOR)
 public class ColorConsumer implements RecoveryCallback<Object> {

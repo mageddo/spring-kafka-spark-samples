@@ -1,6 +1,8 @@
 package com.mageddo.kafka;
 
-import com.mageddo.kafka.message.QueueEnum;
+import com.mageddo.kafka.message.ConsumerDeclarer;
+import com.mageddo.kafka.message.RetryableKafkaListenerContainerFactory;
+import com.mageddo.kafka.message.TopicEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -14,8 +16,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.config.KafkaListenerEndpoint;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-import org.springframework.retry.RecoveryCallback;
+import org.springframework.kafka.listener.AbstractMessageListenerContainer.AckMode;
+import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
@@ -38,10 +42,7 @@ public class Application implements SchedulingConfigurer, InitializingBean {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Autowired
-	private KafkaProperties kafkaProperties;
-
-	@Autowired
-	private ConfigurableBeanFactory beanFactory;
+	private ConsumerDeclarer consumerDeclarer;
 
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class);
@@ -54,39 +55,6 @@ public class Application implements SchedulingConfigurer, InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		for (QueueEnum queueEnum : QueueEnum.values()) {
-			if(queueEnum.isAutoConfigure()){
-				declareConsumer(queueEnum);
-			}
-		}
-	}
-
-	private void declareConsumer(final QueueEnum queueEnum) {
-
-		final ConcurrentKafkaListenerContainerFactory factory = new ConcurrentKafkaListenerContainerFactory<>();
-		factory.setConcurrency(queueEnum.getConsumers());
-		factory.setConsumerFactory(new DefaultKafkaConsumerFactory<>(kafkaProperties.buildConsumerProperties()));
-//		factory.getContainerProperties().setAckOnError(false);
-//		factory.getContainerProperties().setAckMode(AbstractMessageListenerContainer.AckMode.MANUAL);
-		factory.setRecoveryCallback(context -> {
-			logger.info("status=recovering, topic={}", queueEnum.getTopic());
-			beanFactory.getBean(queueEnum.getTopic(), RecoveryCallback.class).recover(context);
-			return null;
-		});
-
-		final ExponentialBackOffPolicy policy = new ExponentialBackOffPolicy();
-		policy.setInitialInterval(queueEnum.getInterval());
-		policy.setMultiplier(1.0);
-		policy.setMaxInterval(queueEnum.getInterval());
-
-		final SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
-		retryPolicy.setMaxAttempts(queueEnum.getTries());
-
-		final RetryTemplate retryTemplate = new RetryTemplate();
-		retryTemplate.setBackOffPolicy(policy);
-		retryTemplate.setRetryPolicy(retryPolicy);
-		retryTemplate.setThrowLastExceptionOnExhausted(true);
-		factory.setRetryTemplate(retryTemplate);
-		beanFactory.registerSingleton(queueEnum.getFactory(), factory);
+		consumerDeclarer.declare(TopicEnum.values());
 	}
 }
