@@ -31,12 +31,12 @@ public class ConsumerDeclarer {
 
 	public void declareConsumer(final TopicDefinition topic) {
 
-		final boolean autoStartup = topic.getConsumers() > 0 && autostartup;
-		if(!topic.isAutoConfigure() || !autoStartup){
+		if(!topic.isAutoConfigure()){
 			return ;
 		}
 
 		final ConcurrentKafkaListenerContainerFactory factory = new RetryableKafkaListenerContainerFactory();
+		final boolean autoStartup = topic.getConsumers() > 0 && autostartup;
 		if(autoStartup){
 			factory.setConcurrency(topic.getConsumers());
 		}
