@@ -1,6 +1,7 @@
 package com.mageddo.kafka.message;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
@@ -19,6 +20,9 @@ public class ConsumerDeclarer {
 	@Autowired
 	private KafkaProperties kafkaProperties;
 
+	@Value("${spring.kafka.consumer.autostartup:true}")
+	private boolean autostartup;
+
 	public void declare(final TopicDefinition ... topics) {
 		for (TopicDefinition topic : topics) {
 			declareConsumer(topic);
@@ -27,12 +31,12 @@ public class ConsumerDeclarer {
 
 	public void declareConsumer(final TopicDefinition topic) {
 
-		if(!topic.isAutoConfigure()){
+		final boolean autoStartup = topic.getConsumers() > 0 && autostartup;
+		if(!topic.isAutoConfigure() || !autoStartup){
 			return ;
 		}
 
 		final ConcurrentKafkaListenerContainerFactory factory = new RetryableKafkaListenerContainerFactory();
-		final boolean autoStartup = topic.getConsumers() > 0;
 		if(autoStartup){
 			factory.setConcurrency(topic.getConsumers());
 		}
