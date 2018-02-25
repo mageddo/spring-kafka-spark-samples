@@ -57,6 +57,7 @@ public class ConsumerDeclarer {
 		retryTemplate.setBackOffPolicy(policy);
 		retryTemplate.setRetryPolicy(retryPolicy);
 		retryTemplate.setThrowLastExceptionOnExhausted(true);
+		retryTemplate.registerListener(new SimpleRetryListener());
 		factory.setRetryTemplate(retryTemplate);
 		beanFactory.registerSingleton(topic.getFactory(), factory);
 	}
