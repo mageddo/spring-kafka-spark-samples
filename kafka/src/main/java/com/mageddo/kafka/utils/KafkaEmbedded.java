@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ServerSocketFactory;
 
 import kafka.utils.TestUtils;
+import kafka.zk.EmbeddedZookeeper;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.exception.ZkInterruptedException;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -37,7 +38,6 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.protocol.Errors;
-import org.apache.kafka.common.protocol.SecurityProtocol;
 import org.apache.kafka.common.requests.MetadataResponse;
 import org.apache.kafka.common.utils.Time;
 
@@ -50,7 +50,6 @@ import kafka.server.NotRunning;
 import kafka.utils.CoreUtils;
 import kafka.utils.ZKStringSerializer$;
 import kafka.utils.ZkUtils;
-import kafka.zk.EmbeddedZookeeper;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
@@ -95,7 +94,7 @@ public class KafkaEmbedded extends ExternalResource {
 
 	private final List<KafkaServer> kafkaServers = new ArrayList<>();
 
-	private EmbeddedZookeeper zookeeper;
+	private kafka.zk.EmbeddedZookeeper zookeeper;
 
 	private ZkClient zookeeperClient;
 
@@ -154,19 +153,20 @@ public class KafkaEmbedded extends ExternalResource {
 			ServerSocket ss = ServerSocketFactory.getDefault().createServerSocket(0);
 			int randomPort = ss.getLocalPort();
 			ss.close();
-			Properties brokerConfigProperties = TestUtils.createBrokerConfig(i, this.zkConnect, this.controlledShutdown,
-					true, randomPort,
-					scala.Option.<SecurityProtocol>apply(null),
-					scala.Option.<File>apply(null),
-					scala.Option.<Properties>apply(null),
-					true, false, 0, false, 0, false, 0, scala.Option.<String>apply(null));
-			brokerConfigProperties.setProperty(KafkaConfig$.MODULE$.PortProp(), "" + randomPort);
-			brokerConfigProperties.setProperty("replica.socket.timeout.ms", "1000");
-			brokerConfigProperties.setProperty("controller.socket.timeout.ms", "1000");
-			brokerConfigProperties.setProperty("offsets.topic.replication.factor", "1");
-			brokerConfigProperties.setProperty("group.min.session.timeout.ms", "1000");
-			KafkaServer server = TestUtils.createServer(new KafkaConfig(brokerConfigProperties), Time.SYSTEM);
-			this.kafkaServers.add(server);
+//			Properties brokerConfigProperties = TestUtils.createBrokerConfig(i, this.zkConnect, this.controlledShutdown,
+//					true, randomPort,
+//					scala.Option.<>apply(null),
+//					scala.Option.<File>apply(null),
+//					scala.Option.<Properties>apply(null),
+//					true, false, 0, false, 0, false, 0, scala.Option.<String>apply(null));
+//			brokerConfigProperties.setProperty(KafkaConfig$.MODULE$.PortProp(), "" + randomPort);
+//			brokerConfigProperties.setProperty("replica.socket.timeout.ms", "1000");
+//			brokerConfigProperties.setProperty("controller.socket.timeout.ms", "1000");
+//			brokerConfigProperties.setProperty("offsets.topic.replication.factor", "1");
+//			brokerConfigProperties.setProperty("group.min.session.timeout.ms", "1000");
+//			KafkaServer server = TestUtils.createServer(new KafkaConfig(brokerConfigProperties), Time.SYSTEM);
+//			this.kafkaServers.add(server);
+			// FIXME need to fix
 		}
 		ZkUtils zkUtils = getZkUtils();
 		Properties props = new Properties();
@@ -290,20 +290,20 @@ public class KafkaEmbedded extends ExternalResource {
 				canExit = true;
 				ZkUtils zkUtils = getZkUtils();
 				Map<String, Properties> topicProperties = AdminUtils$.MODULE$.fetchAllTopicConfigs(zkUtils);
-				Set<MetadataResponse.TopicMetadata> topicMetadatas =
-						AdminUtils$.MODULE$.fetchTopicMetadataFromZk(topicProperties.keySet(), zkUtils);
-				for (MetadataResponse.TopicMetadata topicMetadata : JavaConversions.asJavaCollection(topicMetadatas)) {
-					if (Errors.forCode(topicMetadata.error().code()).exception() == null) {
-						for (MetadataResponse.PartitionMetadata partitionMetadata : topicMetadata.partitionMetadata()) {
-							Collection<Node> inSyncReplicas = partitionMetadata.isr();
-							for (Node node : inSyncReplicas) {
-								if (node.id() == index) {
-									canExit = false;
-								}
-							}
-						}
-					}
-				}
+//				Set<MetadataResponse.TopicMetadata> topicMetadatas =
+//						AdminUtils$.MODULE$.fetchTopicMetadataFromZk(topicProperties.keySet(), zkUtils);
+//				for (MetadataResponse.TopicMetadata topicMetadata : JavaConversions.asJavaCollection(topicMetadatas)) {
+//					if (Errors.forCode(topicMetadata.error().code()).exception() == null) {
+//						for (MetadataResponse.PartitionMetadata partitionMetadata : topicMetadata.partitionMetadata()) {
+//							Collection<Node> inSyncReplicas = partitionMetadata.isr();
+//							for (Node node : inSyncReplicas) {
+//								if (node.id() == index) {
+//									canExit = false;
+//								}
+//							}
+//						}
+//					}
+//				}
 			}
 			while (!canExit && (System.currentTimeMillis() - initialTime < METADATA_PROPAGATION_TIMEOUT));
 		}
@@ -351,24 +351,24 @@ public class KafkaEmbedded extends ExternalResource {
 			catch (InterruptedException e) {
 				break;
 			}
-			canExit = true;
-			ZkUtils zkUtils = getZkUtils();
-			MetadataResponse.TopicMetadata topicMetadata = AdminUtils$.MODULE$.fetchTopicMetadataFromZk(topic, zkUtils);
-			if (Errors.forCode(topicMetadata.error().code()).exception() == null) {
-				for (MetadataResponse.PartitionMetadata partitionMetadata : topicMetadata.partitionMetadata()) {
-					Collection<Node> isr = partitionMetadata.isr();
-					boolean containsIndex = false;
-					for (Node node : isr) {
-						if (node.id() == brokerId) {
-							containsIndex = true;
-						}
-					}
-					if (!containsIndex) {
-						canExit = false;
-					}
-
-				}
-			}
+//			canExit = true;
+//			ZkUtils zkUtils = getZkUtils();
+//			MetadataResponse.TopicMetadata topicMetadata = AdminUtils$.MODULE$.fetchTopicMetadataFromZk(topic, zkUtils);
+//			if (Errors.forCode(topicMetadata.error().code()).exception() == null) {
+//				for (MetadataResponse.PartitionMetadata partitionMetadata : topicMetadata.partitionMetadata()) {
+//					Collection<Node> isr = partitionMetadata.isr();
+//					boolean containsIndex = false;
+//					for (Node node : isr) {
+//						if (node.id() == brokerId) {
+//							containsIndex = true;
+//						}
+//					}
+//					if (!containsIndex) {
+//						canExit = false;
+//					}
+//
+//				}
+//			}
 		}
 		while (!canExit && (System.currentTimeMillis() - initialTime < METADATA_PROPAGATION_TIMEOUT));
 	}
