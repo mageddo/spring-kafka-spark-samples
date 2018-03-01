@@ -3,6 +3,11 @@ package com.mageddo.kafka;
 import com.mageddo.kafka.message.ConsumerDeclarer;
 import com.mageddo.kafka.message.RetryableKafkaListenerContainerFactory;
 import com.mageddo.kafka.message.TopicEnum;
+import com.mageddo.kafka.service.LineService;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -12,6 +17,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.kafka.annotation.EnableKafka;
@@ -27,6 +33,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 
 
@@ -45,7 +55,10 @@ public class Application implements SchedulingConfigurer, InitializingBean {
 	private ConsumerDeclarer consumerDeclarer;
 
 	public static void main(String[] args) {
-		SpringApplication.run(Application.class);
+		ConfigurableApplicationContext app = SpringApplication.run(Application.class);
+//		LineService service = app.getBean(LineService.class);
+//		service.send();
+//		System.out.println("ok!");
 	}
 
 	@Override

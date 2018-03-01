@@ -115,18 +115,10 @@ project(":kafka"){
 	}
 
 	dependencies {
-		compile group: 'org.apache.kafka', name: 'kafka-clients', version: '0.10.2.1'
-		compile group: 'org.apache.kafka', name: 'kafka_2.11', version: '0.10.2.1'
-		compile group: 'org.springframework.retry', name: 'spring-retry', version: '1.2.1.RELEASE'
-
-
-		compile('org.apache.kafka:kafka-clients:0.10.2.1:test')
-		compile('org.apache.kafka:kafka_2.11:0.10.2.1:test')
-//		compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.8.2'
-
+		compile group: 'org.apache.kafka', name: 'kafka-clients', version: '1.0.0'
+		compile group: 'org.apache.kafka', name: 'kafka_2.11', version: '1.0.0'
+//		compile group: 'org.springframework.retry', name: 'spring-retry', version: '1.2.1.RELEASE'
 		compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
-//		compile group: 'ch.qos.logback', name: 'logback-core', version: '1.2.3'
-
 		compile group: 'org.assertj', name: 'assertj-core', version: '3.6.1'
 		compile group: 'junit', name: 'junit', version: '4.12'
 
