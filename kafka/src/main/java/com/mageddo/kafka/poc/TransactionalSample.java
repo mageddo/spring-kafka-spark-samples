@@ -1,19 +1,45 @@
 package com.mageddo.kafka.poc;
 
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.Executors;
 
 public class TransactionalSample {
 
-	public static void main(String[] args) {
-		final KafkaProducer<String, Object> producer = new KafkaProducer<>(config("kafka.dev:9092"));
+	public static void main(String[] args) throws InterruptedException {
+
+		final String broker = "zookeeper.intranet:9092";
+		Executors.newFixedThreadPool(1).execute(() -> {
+			final KafkaConsumer<Object, Object> consumer = new KafkaConsumer<>(consumerConfig(broker));
+//			consumer.seekToEnd();
+			try {
+				consumer.subscribe(Collections.singleton("MyTopic"));
+				while (true) {
+					ConsumerRecords<Object, Object> poll = consumer.poll(1000);
+					for (ConsumerRecord<Object, Object> record : poll) {
+						System.out.printf("consumed, record=%s%n", record.value());
+					}
+				}
+			} finally {
+				consumer.close();
+			}
+		});
+
+		final KafkaProducer<String, Object> producer = new KafkaProducer<>(config(broker));
 		int i = 1;
 		producer.initTransactions();
 		while (i == 1) {
@@ -23,12 +49,24 @@ public class TransactionalSample {
 			);
 			producer.beginTransaction();
 			producer.send(record);
+			System.out.println("sending, record=" + record.value());
 			producer.commitTransaction();
 //			producer.flush();
-			System.out.println("posted");
-
+			System.out.println("sent, record=" + record.value());
+			Thread.sleep(1000);
+			System.out.printf("");
 		}
 		producer.close();
+	}
+
+	private static Properties consumerConfig(String server) {
+		final Properties props = new Properties();
+		props.put(ConsumerConfig.GROUP_ID_CONFIG, UUID.randomUUID().toString());
+		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, server);
+		props.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
+		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+		props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+		return props;
 	}
 
 	public static Map<String, Object> config(String kafkaServer) {
