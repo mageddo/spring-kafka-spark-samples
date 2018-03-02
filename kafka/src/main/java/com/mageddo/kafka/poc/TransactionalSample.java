@@ -66,6 +66,7 @@ public class TransactionalSample {
 		props.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
 		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 		props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+		props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 		return props;
 	}
 
