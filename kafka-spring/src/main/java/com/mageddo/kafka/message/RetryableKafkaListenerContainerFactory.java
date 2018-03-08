@@ -9,11 +9,12 @@ import org.springframework.retry.RecoveryCallback;
 public class RetryableKafkaListenerContainerFactory<K, V> extends ConcurrentKafkaListenerContainerFactory<K, V> {
 
 	private ConcurrentMessageListenerContainer<K, V> container;
+	private Object bean;
 
 	@Override
 	protected ConcurrentMessageListenerContainer<K, V> createContainerInstance(KafkaListenerEndpoint endpoint) {
 		container = super.createContainerInstance(endpoint);
-		final Object bean = ((MethodKafkaListenerEndpoint) endpoint).getBean();
+		bean = ((MethodKafkaListenerEndpoint) endpoint).getBean();
 		if(bean instanceof RecoveryCallback){
 			setRecoveryCallback(((RecoveryCallback) bean));
 		}
@@ -22,5 +23,9 @@ public class RetryableKafkaListenerContainerFactory<K, V> extends ConcurrentKafk
 
 	public ConcurrentMessageListenerContainer<K, V> getContainer() {
 		return container;
+	}
+
+	public Object getBean() {
+		return bean;
 	}
 }

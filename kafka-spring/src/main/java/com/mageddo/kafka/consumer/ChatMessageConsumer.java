@@ -1,5 +1,8 @@
 package com.mageddo.kafka.consumer;
 
+import com.mageddo.kafka.message.Consumer;
+import com.mageddo.kafka.message.TopicConsumer;
+import com.mageddo.kafka.message.TopicEnum;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
@@ -28,8 +31,9 @@ import static com.mageddo.kafka.message.TopicEnum.Constants.CHAT_MESSAGE_FACTORY
  *
  * Com estas configuracoes nao tive nenhum tipo de output de log do kafka
  */
+//@Consumer(dlq = CHAT_MESSAGE)
 @Component
-public class ChatMessageConsumer implements RecoveryCallback<Object> {
+public class ChatMessageConsumer implements RecoveryCallback<Object>, TopicConsumer {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -64,4 +68,8 @@ public class ChatMessageConsumer implements RecoveryCallback<Object> {
 		return null;
 	}
 
+	@Override
+	public TopicEnum getTopic() {
+		return TopicEnum.CHAT_MESSAGE;
+	}
 }

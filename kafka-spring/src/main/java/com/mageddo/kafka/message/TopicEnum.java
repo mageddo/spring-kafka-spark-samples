@@ -21,6 +21,7 @@ public enum TopicEnum implements TopicDefinition {
 	private final AckMode ackMode;
 	private final boolean autoConfigure;
 	private final Map<String, Object> props;
+	private String dlq;
 
 	TopicEnum(String topic, String factory, int consumers, long interval, int maxTries, AckMode ackMode, boolean autoConfigure) {
 		this(topic, factory, consumers, interval, maxTries, ackMode, autoConfigure, MapBuilder.map());
@@ -35,6 +36,7 @@ public enum TopicEnum implements TopicDefinition {
 		this.ackMode = ackMode;
 		this.autoConfigure = autoConfigure;
 		this.props = props.get();
+		this.dlq = String.format("%s_DLQ", getTopic());
 	}
 
 	public String getTopic() {
@@ -69,6 +71,14 @@ public enum TopicEnum implements TopicDefinition {
 	@Override
 	public Map<String, Object> getProps() {
 		return props;
+	}
+
+	public String getDLQ() {
+		return dlq;
+	}
+
+	public void setDLQ(String DLQ) {
+		this.dlq = DLQ;
 	}
 
 	public static class Constants {
