@@ -1,11 +1,8 @@
 package com.mageddo.kafka;
 
 import com.mageddo.kafka.message.ConsumerDeclarer;
-import com.mageddo.kafka.message.TopicEnum;
-import com.mageddo.kafka.service.LineService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,21 +15,15 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.context.annotation.Primary;
-import org.springframework.data.transaction.ChainedTransactionManager;
 import org.springframework.kafka.annotation.EnableKafka;
-import org.springframework.kafka.core.DefaultKafkaProducerFactory;
-import org.springframework.kafka.core.ProducerFactory;
-import org.springframework.kafka.transaction.KafkaTransactionManager;
-import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
-import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 
-import javax.persistence.EntityManagerFactory;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @EnableKafka
@@ -64,7 +55,7 @@ public class Application implements SchedulingConfigurer, InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		consumerDeclarer.declare(TopicEnum.values());
+		consumerDeclarer.declare(Stream.of(TopicEnum.values()).map(i -> i.getTopic()).collect(Collectors.toList()));
 	}
 
 	@Bean

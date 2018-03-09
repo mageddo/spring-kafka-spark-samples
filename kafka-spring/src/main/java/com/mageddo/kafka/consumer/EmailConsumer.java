@@ -13,8 +13,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.mageddo.kafka.message.TopicEnum.Constants.EMAIL;
-import static com.mageddo.kafka.message.TopicEnum.Constants.EMAIL_FACTORY;
+import static com.mageddo.kafka.TopicEnum.Constants.EMAIL;
+import static com.mageddo.kafka.TopicEnum.Constants.EMAIL_FACTORY;
 
 @Component(EMAIL)
 public class EmailConsumer implements RecoveryCallback<Object> {

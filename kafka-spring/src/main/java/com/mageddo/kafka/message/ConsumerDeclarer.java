@@ -8,6 +8,9 @@ import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class ConsumerDeclarer {
 
 	private ConfigurableBeanFactory beanFactory;
@@ -21,6 +24,10 @@ public class ConsumerDeclarer {
 	}
 
 	public void declare(final TopicDefinition ... topics) {
+		declare(Arrays.asList(topics));
+	}
+
+	public void declare(final List<TopicDefinition> topics) {
 		for (TopicDefinition topic : topics) {
 			declareConsumer(topic);
 		}

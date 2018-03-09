@@ -2,7 +2,8 @@ package com.mageddo.kafka.consumer;
 
 import com.mageddo.kafka.message.KafkaUtils;
 import com.mageddo.kafka.message.TopicConsumer;
-import com.mageddo.kafka.message.TopicEnum;
+import com.mageddo.kafka.TopicEnum;
+import com.mageddo.kafka.message.TopicDefinition;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
@@ -15,13 +16,11 @@ import org.springframework.retry.RetryContext;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.mageddo.kafka.message.TopicEnum.Constants.CHAT_MESSAGE;
-import static com.mageddo.kafka.message.TopicEnum.Constants.CHAT_MESSAGE_FACTORY;
+import static com.mageddo.kafka.TopicEnum.Constants.CHAT_MESSAGE;
+import static com.mageddo.kafka.TopicEnum.Constants.CHAT_MESSAGE_FACTORY;
 
 /**
  * Este consumidor prova que a configuracao do ConsumerDeclarer está funcionando assim, quando
@@ -81,7 +80,7 @@ public class ChatMessageConsumer implements RecoveryCallback<Object>, TopicConsu
 	}
 
 	@Override
-	public TopicEnum topic() {
-		return TopicEnum.CHAT_MESSAGE;
+	public TopicDefinition topic() {
+		return TopicEnum.CHAT_MESSAGE.getTopic();
 	}
 }

@@ -23,8 +23,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.mageddo.kafka.message.TopicEnum.Constants.COLOR;
-import static com.mageddo.kafka.message.TopicEnum.Constants.COLOR_FACTORY;
+import static com.mageddo.kafka.TopicEnum.Constants.COLOR;
+import static com.mageddo.kafka.TopicEnum.Constants.COLOR_FACTORY;
 
 @Component(COLOR)
 public class ColorConsumer implements RecoveryCallback<Object> {
