@@ -35,6 +35,5 @@ public class TopicJMX {
 		final KafkaMessageListenerContainer container = new KafkaMessageListenerContainer<>(new DefaultKafkaConsumerFactory<>(kafkaProperties.buildConsumerProperties()),
 			new ContainerProperties("A"));
 
-		container.is
 	}
 }

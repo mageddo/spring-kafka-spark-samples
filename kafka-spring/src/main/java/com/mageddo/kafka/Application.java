@@ -49,9 +49,9 @@ public class Application implements SchedulingConfigurer, InitializingBean {
 
 	public static void main(String[] args) {
 		ConfigurableApplicationContext app = SpringApplication.run(Application.class);
-		LineService service = app.getBean(LineService.class);
-		service.send();
-		System.out.println("ok!");
+//		LineService service = app.getBean(LineService.class);
+//		service.send();
+//		System.out.println("ok!");
 	}
 
 	@Override
@@ -63,32 +63,32 @@ public class Application implements SchedulingConfigurer, InitializingBean {
 	public void afterPropertiesSet() throws Exception {
 		consumerDeclarer.declare(TopicEnum.values());
 	}
-
-	@Bean
-	public KafkaTransactionManager kafkaTransactionManager(ProducerFactory f) {
-		KafkaTransactionManager ktm = new KafkaTransactionManager(f);
-		ktm.setTransactionSynchronization(AbstractPlatformTransactionManager.SYNCHRONIZATION_ON_ACTUAL_TRANSACTION);
-		return ktm;
-	}
-
-	@Bean
-	@Primary
-	public DefaultKafkaProducerFactory x(KafkaProperties properties){
-		DefaultKafkaProducerFactory f = new DefaultKafkaProducerFactory<>(properties.buildProducerProperties());
-		f.setTransactionIdPrefix("myId");
-		return f;
-	}
-
-	// https://stackoverflow.com/questions/47354521/transaction-synchronization-in-spring-kafka
-	@Bean
-	@Primary
-	public JpaTransactionManager transactionManager(EntityManagerFactory em) {
-		return new JpaTransactionManager(em);
-	}
-
-	@Bean(name = "chainedTransactionManager")
-	public ChainedTransactionManager chainedTransactionManager(JpaTransactionManager jpaTransactionManager,
-																														 KafkaTransactionManager kafkaTransactionManager) {
-		return new ChainedTransactionManager(kafkaTransactionManager, jpaTransactionManager);
-	}
+//
+//	@Bean
+//	public KafkaTransactionManager kafkaTransactionManager(ProducerFactory f) {
+//		KafkaTransactionManager ktm = new KafkaTransactionManager(f);
+//		ktm.setTransactionSynchronization(AbstractPlatformTransactionManager.SYNCHRONIZATION_ON_ACTUAL_TRANSACTION);
+//		return ktm;
+//	}
+//
+//	@Bean
+//	@Primary
+//	public DefaultKafkaProducerFactory x(KafkaProperties properties){
+//		DefaultKafkaProducerFactory f = new DefaultKafkaProducerFactory<>(properties.buildProducerProperties());
+//		f.setTransactionIdPrefix("myId");
+//		return f;
+//	}
+//
+//	// https://stackoverflow.com/questions/47354521/transaction-synchronization-in-spring-kafka
+//	@Bean
+//	@Primary
+//	public JpaTransactionManager transactionManager(EntityManagerFactory em) {
+//		return new JpaTransactionManager(em);
+//	}
+//
+//	@Bean(name = "chainedTransactionManager")
+//	public ChainedTransactionManager chainedTransactionManager(JpaTransactionManager jpaTransactionManager,
+//																														 KafkaTransactionManager kafkaTransactionManager) {
+//		return new ChainedTransactionManager(kafkaTransactionManager, jpaTransactionManager);
+//	}
 }

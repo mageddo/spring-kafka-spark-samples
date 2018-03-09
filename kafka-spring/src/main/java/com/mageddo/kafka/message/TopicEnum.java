@@ -11,7 +11,7 @@ public enum TopicEnum implements TopicDefinition {
 
 	COLOR(Constants.COLOR, COLOR_FACTORY, 5, 5000, 3, AckMode.RECORD, false),
 	EMAIL(Constants.EMAIL, EMAIL_FACTORY, 0, 5000, 3, AckMode.RECORD, true),
-	CHAT_MESSAGE(Constants.CHAT_MESSAGE, CHAT_MESSAGE_FACTORY, 5, Duration.ofSeconds(11).toMillis(), 3, AckMode.RECORD, true);
+	CHAT_MESSAGE(Constants.CHAT_MESSAGE, CHAT_MESSAGE_FACTORY, 1, Duration.ofSeconds(11).toMillis(), 3, AckMode.RECORD, true);
 
 	private final String topic;
 	private final String factory;
@@ -77,8 +77,8 @@ public enum TopicEnum implements TopicDefinition {
 		return dlq;
 	}
 
-	public void setDLQ(String DLQ) {
-		this.dlq = DLQ;
+	public String retryTopic(){
+		return String.format("%s_RETRY", getTopic());
 	}
 
 	public static class Constants {
