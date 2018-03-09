@@ -1,7 +1,5 @@
 package com.mageddo.kafka.message;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
@@ -9,19 +7,18 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.stereotype.Component;
 
-@Component
 public class ConsumerDeclarer {
 
-	@Autowired
 	private ConfigurableBeanFactory beanFactory;
-
-	@Autowired
 	private KafkaProperties kafkaProperties;
-
-	@Value("${spring.kafka.consumer.autostartup:true}")
 	private boolean autostartup;
+
+	public ConsumerDeclarer(ConfigurableBeanFactory beanFactory, KafkaProperties kafkaProperties, boolean autostartup) {
+		this.beanFactory = beanFactory;
+		this.kafkaProperties = kafkaProperties;
+		this.autostartup = autostartup;
+	}
 
 	public void declare(final TopicDefinition ... topics) {
 		for (TopicDefinition topic : topics) {

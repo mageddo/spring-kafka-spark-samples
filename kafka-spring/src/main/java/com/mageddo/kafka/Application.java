@@ -5,8 +5,11 @@ import com.mageddo.kafka.message.TopicEnum;
 import com.mageddo.kafka.service.LineService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -63,6 +66,13 @@ public class Application implements SchedulingConfigurer, InitializingBean {
 	public void afterPropertiesSet() throws Exception {
 		consumerDeclarer.declare(TopicEnum.values());
 	}
+
+	@Bean
+	public ConsumerDeclarer consumerDeclarer(ConfigurableBeanFactory beanFactory, KafkaProperties kafkaProperties,
+																					 @Value("${spring.kafka.consumer.autostartup:true}") boolean autostartup){
+		return new ConsumerDeclarer(beanFactory, kafkaProperties, autostartup);
+	}
+
 //
 //	@Bean
 //	public KafkaTransactionManager kafkaTransactionManager(ProducerFactory f) {
