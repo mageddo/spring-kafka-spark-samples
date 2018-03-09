@@ -53,7 +53,7 @@ public class ChatMessageConsumer implements RecoveryCallback<Object>, TopicConsu
 		logger.info("status=posted, counter={}", counter.get());
 	}
 
-	@KafkaListener(containerFactory = CHAT_MESSAGE_FACTORY, topics = "#{__listener.topic().getTopic()}")
+	@KafkaListener(containerFactory = CHAT_MESSAGE_FACTORY, topics = "#{__listener.topic().getName()}")
 	public void consume(ConsumerRecord<String, String> record) throws Exception {
 //		Thread.sleep(Duration.ofSeconds(12).toMillis());
 //		if(new Random().nextBoolean()){
