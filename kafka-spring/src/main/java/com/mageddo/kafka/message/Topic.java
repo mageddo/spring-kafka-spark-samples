@@ -64,6 +64,10 @@ public class Topic implements TopicDefinition {
 		return props;
 	}
 
+	public String retryTopic(){
+		return KafkaUtils.nextTopic(getName());
+	}
+
 	public static class MapBuilder {
 		private final Map<String, Object> map;
 
