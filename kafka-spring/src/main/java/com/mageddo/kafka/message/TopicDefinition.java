@@ -21,4 +21,6 @@ public interface TopicDefinition {
 	AckMode getAckMode();
 
 	Map<String, Object> getProps();
+
+	long getMaxInterval();
 }

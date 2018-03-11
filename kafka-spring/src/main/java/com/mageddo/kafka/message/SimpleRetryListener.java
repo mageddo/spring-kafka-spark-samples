@@ -21,6 +21,6 @@ public class SimpleRetryListener implements org.springframework.retry.RetryListe
 
 	@Override
 	public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
-		logger.error("status=error", throwable);
+		logger.error("status=error, msg={}", throwable.getMessage(), throwable);
 	}
 }

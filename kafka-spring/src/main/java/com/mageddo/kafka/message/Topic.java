@@ -2,35 +2,48 @@ package com.mageddo.kafka.message;
 
 import org.springframework.kafka.listener.AbstractMessageListenerContainer.AckMode;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Topic implements TopicDefinition {
 
-	private final String topic;
-	private final String factory;
-	private final int consumers;
-	private final long interval;
-	private final int maxTries;
-	private final AckMode ackMode;
-	private final boolean autoConfigure;
-	private final Map<String, Object> props;
+	private String topic;
+	private String factory;
+	private int consumers;
+	private long interval;
+	private long maxInterval;
+	private int maxTries;
+	private AckMode ackMode;
+	private boolean autoConfigure;
+	private Map<String, Object> props;
+
+	public Topic(){
+		this.autoConfigure = true;
+		this.ackMode = AckMode.RECORD;
+	}
+
+	public Topic(String topic){
+		this();
+		this.topic = topic;
+	}
 
 	public Topic(String topic, String factory, int consumers, long interval, int maxTries, AckMode ackMode, boolean autoConfigure) {
 		this(topic, factory, consumers, interval, maxTries, ackMode, autoConfigure, null);
 	}
 
 	public Topic(String topic, String factory, int consumers, long interval, int maxTries, AckMode ackMode, boolean autoConfigure, MapBuilder props) {
+		this();
 		this.topic = topic;
 		this.factory = factory;
 		this.consumers = consumers;
 		this.interval = interval;
+		this.maxInterval = interval;
 		this.maxTries = maxTries;
 		this.ackMode = ackMode;
 		this.autoConfigure = autoConfigure;
 		this.props = props == null ? null : props.get();
 	}
-
 
 	public String getName() {
 		return topic;
@@ -45,7 +58,7 @@ public class Topic implements TopicDefinition {
 	}
 
 	public long getInterval() {
-		return interval;
+		return Math.min(interval, maxInterval);
 	}
 
 	public int getMaxTries() {
@@ -64,8 +77,64 @@ public class Topic implements TopicDefinition {
 		return props;
 	}
 
-	public String retryTopic(){
-		return KafkaUtils.nextTopic(getName());
+	@Override
+	public long getMaxInterval() {
+		return Math.max(maxInterval, interval);
+	}
+
+	public Topic topic(String topic) {
+		this.topic = topic;
+		return this;
+	}
+
+	public Topic factory(String factory) {
+		this.factory = factory;
+		return this;
+	}
+
+	public Topic consumers(int consumers) {
+		this.consumers = consumers;
+		return this;
+	}
+
+	public Topic interval(long interval) {
+		this.interval = interval;
+		return this;
+	}
+
+	public Topic interval(Duration duration) {
+		this.interval = duration.toMillis();
+		return this;
+	}
+
+	public Topic maxTries(int maxTries) {
+		this.maxTries = maxTries;
+		return this;
+	}
+
+	public Topic ackMode(AckMode ackMode) {
+		this.ackMode = ackMode;
+		return this;
+	}
+
+	public Topic autoConfigure(boolean autoConfigure) {
+		this.autoConfigure = autoConfigure;
+		return this;
+	}
+
+	public Topic props(Map<String, Object> props) {
+		this.props = props;
+		return this;
+	}
+
+	public Topic props(MapBuilder props) {
+		this.props = props.get();
+		return this;
+	}
+
+	public Topic maxInterval(long maxInterval) {
+		this.maxInterval = maxInterval;
+		return this;
 	}
 
 	public static class MapBuilder {
@@ -87,11 +156,6 @@ public class Topic implements TopicDefinition {
 		public Map<String, Object> get(){
 			return this.map;
 		}
-	}
-
-	public static class Constants {
-
-		public static final String SITE_PROFESSIONAL_FACTORY = "SITE_PROFESSIONAL_FACTORY";
 	}
 
 }

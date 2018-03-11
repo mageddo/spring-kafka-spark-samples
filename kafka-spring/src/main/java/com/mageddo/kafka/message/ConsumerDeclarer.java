@@ -23,7 +23,7 @@ public class ConsumerDeclarer {
 		this.autostartup = autostartup;
 	}
 
-	public void declare(final TopicDefinition ... topics) {
+	public void declare(final TopicDefinition... topics) {
 		declare(Arrays.asList(topics));
 	}
 
@@ -52,7 +52,7 @@ public class ConsumerDeclarer {
 		final ExponentialBackOffPolicy policy = new ExponentialBackOffPolicy();
 		policy.setInitialInterval(topic.getInterval());
 		policy.setMultiplier(1.0);
-		policy.setMaxInterval(topic.getInterval());
+		policy.setMaxInterval(topic.getMaxInterval());
 
 		final SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
 		retryPolicy.setMaxAttempts(topic.getMaxTries());
