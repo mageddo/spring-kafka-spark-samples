@@ -1,29 +1,30 @@
 package com.mageddo.kafka.poc;
 
-import java.util.HashMap;
-import java.util.List;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import kafka.consumer.ConsumerConfig;
-import kafka.consumer.KafkaStream;
 
 
 public class StreamConsumerGroupExample {
-	private final kafka.javaapi.consumer.ConsumerConnector consumer;
+
+	private final String zookeeper;
+	private final String groupId;
 	private final String topic;
 	private ExecutorService executor;
 
-	public StreamConsumerGroupExample(String a_zookeeper, String a_groupId, String a_topic) {
-		consumer = kafka.consumer.Consumer.createJavaConsumerConnector(createConsumerConfig(a_zookeeper, a_groupId));
+	public StreamConsumerGroupExample(String zookeeper, String groupId, String a_topic) {
+		this.zookeeper = zookeeper;
+		this.groupId = groupId;
 		this.topic = a_topic;
 	}
 
 	public void shutdown() {
-		if (consumer != null) consumer.shutdown();
 		if (executor != null) executor.shutdown();
 		try {
 			if (!executor.awaitTermination(5000, TimeUnit.MILLISECONDS)) {
@@ -34,34 +35,23 @@ public class StreamConsumerGroupExample {
 		}
 	}
 
-	public void run(int a_numThreads) {
-		Map<String, Integer> topicCountMap = new HashMap<String, Integer>();
-		topicCountMap.put(topic, new Integer(a_numThreads));
-		Map<String, List<KafkaStream<byte[], byte[]>>> consumerMap = consumer.createMessageStreams(topicCountMap);
-		List<KafkaStream<byte[], byte[]>> streams = consumerMap.get(topic);
-
-		// now launch all the threads
-		//
-		executor = Executors.newFixedThreadPool(a_numThreads);
-
-		// now create an object to consume the messages
-		//
-		int threadNumber = 0;
-		for (final KafkaStream stream : streams) {
-			executor.submit(new StreamConsumerTest(stream, threadNumber));
-			threadNumber++;
+	public void run(int consumers) {
+		final KafkaConsumer consumer = new KafkaConsumer<>(createConsumerConfig(zookeeper, groupId));
+		executor = Executors.newFixedThreadPool(consumers);
+		for (int i = 0; i < consumers; i++) {
+			consumer.subscribe(Collections.singletonList(topic));
+			executor.submit(new StreamConsumerTest(consumer, i));
 		}
 	}
 
-	private static ConsumerConfig createConsumerConfig(String a_zookeeper, String a_groupId) {
-		Properties props = new Properties();
+	private static Map<String, Object> createConsumerConfig(String a_zookeeper, String a_groupId) {
+		Map<String, Object> props = new LinkedHashMap<>();
 		props.put("zookeeper.connect", a_zookeeper);
 		props.put("group.id", a_groupId);
 		props.put("zookeeper.session.timeout.ms", "400");
 		props.put("zookeeper.sync.time.ms", "200");
 		props.put("auto.commit.interval.ms", "1000");
-
-		return new ConsumerConfig(props);
+		return props;
 	}
 
 	public static void main(String[] args) {
@@ -75,9 +65,7 @@ public class StreamConsumerGroupExample {
 
 		try {
 			Thread.sleep(1000000);
-		} catch (InterruptedException ie) {
-
-		}
+		} catch (InterruptedException ie) {}
 		example.shutdown();
 	}
 }

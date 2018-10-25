@@ -117,6 +117,7 @@ project(":kafka"){
 	}
 
 	dependencies {
+		compile group: 'org.apache.kafka', name: 'kafka-streams', version: '1.0.0'
 		compile group: 'org.apache.kafka', name: 'kafka-clients', version: '1.0.0'
 		compile group: 'org.apache.kafka', name: 'kafka_2.11', version: '1.0.0'
 		compile group: 'org.springframework.retry', name: 'spring-retry', version: '1.2.1.RELEASE'
