@@ -1,8 +1,9 @@
 package com.mageddo.sparkcsv;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
-public class Statement {
+public class Statement implements Serializable {
 
 	private String description;
 	private String customer;
